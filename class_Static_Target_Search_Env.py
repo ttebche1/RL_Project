@@ -125,7 +125,6 @@ class Static_Target_Search_Environment(gym.Env):
 
         # Compute distance to target
         dist_to_target = float(np.linalg.norm(self._agent_location - self._target_location))
-        normalized_dist = dist_to_target / self._max_distance
 
         # Terminal if within target radius
         terminated = bool(dist_to_target <= self._target_radius)
@@ -138,7 +137,7 @@ class Static_Target_Search_Environment(gym.Env):
         if terminated:
             reward = 1
         else:
-            reward = 0.3 * (0.5 - normalized_dist)
+            reward = 0.3 * (0.5 - dist_to_target)
 
         # Re-render environment if in human render mode
         if self.render_mode == "human":
