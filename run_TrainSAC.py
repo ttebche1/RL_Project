@@ -46,17 +46,3 @@ if __name__ == "__main__":
 
     # Close environments
     vec_env.close()
-
-# -----------------------------
-# Test the trained agent
-# -----------------------------
-#env.render_mode = "human"  # enable visualization
-#obs, info = env.reset()
-#done = False
-#truncated = False
-
-#while not done and not truncated:
-#    action, _states = model.predict(obs, deterministic=False)
-#    obs, reward, done, truncated, info = env.step(action)
-
-#env.close()
