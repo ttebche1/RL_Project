@@ -46,7 +46,7 @@ class Static_Target_Search_Environment(gym.Env):
         )
 
         # Continuous 2D action: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
-        self._max_step_size = 100.0
+        self._max_step_size = 20.0
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
         # Set max number of steps per episode
@@ -120,8 +120,7 @@ class Static_Target_Search_Environment(gym.Env):
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
         # Scale action by max_step and update agent location
-        delta = action * self._max_step_size
-        self._agent_location = np.clip(self._agent_location + delta, 0.0, float(self._size - 1))
+        self._agent_location += action * self._max_step_size
 
         # Compute distance to target
         dist_to_target = float(np.linalg.norm(self._agent_location - self._target_location))
@@ -133,11 +132,20 @@ class Static_Target_Search_Environment(gym.Env):
         self._step_count += 1
         truncated = self._step_count >= self._max_steps_per_episode
 
-        # Set reward to continuous value based on distance (0.3 × (0.5 − d_norm)) and 1 when target reached
+        # Set reward
         if terminated:
-            reward = 1
+            dist_reward = 1
         else:
-            reward = 0.3 * (0.5 - dist_to_target)
+            dist_reward = 0.3 * (0.5 - dist_to_target)
+        
+        if dist_to_target > self._max_distance:
+            terminal_reward = -100
+        elif dist_to_target < self._target_radius:
+            terminal_reward = -1
+        else:
+            terminal_reward = 0
+        
+        reward = dist_reward + terminal_reward
 
         # Re-render environment if in human render mode
         if self.render_mode == "human":

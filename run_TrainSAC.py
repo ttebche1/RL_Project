@@ -1,5 +1,13 @@
 # Train SAC DRL model on Static Target Search Environment
 
+# TO DO:
+# Play around with reward function and amount of training episodes to get a working model
+# In no particular order:
+# - Add currents
+# - Add moving target
+# - Add dropped comms
+# Add multiple agents
+
 import gymnasium as gym
 from class_Progress_Bar import Progress_Bar_Callback
 from class_Static_Target_Search_Env import Static_Target_Search_Environment 
