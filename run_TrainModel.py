@@ -1,30 +1,28 @@
 # Train robot to map a 5x5 grid environment using Q-learning
 
 # Import dependencies
-from class_GridWorldEnv import GridWorldEnv # Custom environment
-from class_QLearningAgent import QAgent     # Q-learning agent
+from class_DQN_Agent import DQN_Agent       # DQN agent
+from class_Static_Target_Search_Env import GridWorldEnv # Custom environment
 from matplotlib import pyplot as plt
 from tqdm import tqdm                       # Creates progress bars for loops
-#import dill                                 # To save q-values
 import gymnasium as gym                     # Reinforcement learning module
 import numpy as np
 import sys                                  # Allow program to exit before end
+import torch
 
 if __name__ == "__main__":
-    # Save q-values?
-    save = 0
-    
-    # Set Q-learning algorithm hyperparameters
-    learning_rate = 0.001
-    n_episodes = 20000     
-    start_epsilon = 1
-    epsilon_decay = start_epsilon / (n_episodes / 2)  # reduce the exploration over time
-    final_epsilon = 0.05
-    discount_factor = 0.99
+    # Set hyperparameters
+    N_EPISODES = 5000
+    INITIAL_EPSILON = 1.0
+    FINAL_EPSILON = 0.05
+    EPSILON_DECAY = INITIAL_EPSILON / (N_EPISODES * 0.6)
+    DISCOUNT_FACTOR = 0.99
+    LEARNING_RATE = 1e-3    
+    BATCH_SIZE = 64
+    BUFFER_CAPACITY = 20000
+    TARGET_UPDATE = 500
 
     # Initialize variables I want to plot at the end of testing
-    total_mapped_cells = []
-    total_step_count = []
     total_reward = []
 
     # Register environment
@@ -34,86 +32,75 @@ if __name__ == "__main__":
     # Set render_mode to None for no display, "human" for display
     env = gym.make("gymnasium_env/GridWorld-v0", grid_size=5, render_mode=None)
 
-    # Create a q-learning agent
-    agent = QAgent(env=env, learning_rate=learning_rate, initial_epsilon=start_epsilon, epsilon_decay=epsilon_decay,final_epsilon=final_epsilon,discount_factor=discount_factor)
+    # Create a DQN agent
+    agent = DQN_Agent(
+        env=env, 
+        learning_rate=LEARNING_RATE, 
+        discount_factor=DISCOUNT_FACTOR,
+        initial_epsilon=INITIAL_EPSILON, 
+        epsilon_decay=EPSILON_DECAY,
+        final_epsilon=FINAL_EPSILON, 
+        buffer_capacity=BUFFER_CAPACITY,
+        batch_size=BATCH_SIZE, 
+        target_update=TARGET_UPDATE
+    )
 
     # Train agent
-    for episode in tqdm(range(n_episodes)):
-        # Reinitialize the environment to its starting state
-        # obs: initial state of environment after reset (should be [0,0])
-        # info: provides additional metadata on environment (should be empty)
+    for episode in tqdm(range(N_EPISODES)):
+        # Initialize episode
         obs, info = env.reset()
-
-        # Keep looping until one episode is done
         episode_done = False
-        count = 0
-        while not episode_done:
-            # Get next action - either random, or based on previously learned values
-            # action: stores action chosen
-            action = agent.get_action(obs)
+        cum_reward = 0.0
 
-            # env.step(action): applies chosen action to the environment
-            # observation: agent's location
-            # reward: 10 points for a new mapped cell, -5 points for a previously mapped cell
-            # terminated: boolean value indicating if episode ended 
-            # truncated: set to false
-            # info: number of mapped cells, step count
+        # Do episode
+        while not episode_done:
+            # Select action
+            action = agent.select_action(obs)
+
+            # Take action
             next_obs, reward, terminated, truncated, info = env.step(action)
 
-            # Update agent
-            agent.update(obs, action, reward, terminated, next_obs)
+            # Store transition
+            agent.store_transition(obs, action, reward, next_obs, terminated)
 
-            # Update if the environment is done
+            # Train agent
+            loss = agent.train()
+
+            # Update variables
+            cum_reward += reward
             episode_done = terminated or truncated
-
-            # Update current observation for agent.get_action(obs)
             obs = next_obs
-        
-        # Store the total reward for this episode in the return queue
-        total_mapped_cells.append(info["mapped_cells"])
-        total_step_count.append(info["step_count"])
-        total_reward.append(reward)
-  
+
+        # Store cumulative reward for this episode
+        total_reward.append(cum_reward)
+
         # Decay epsilon value
         agent.decay_epsilon()
     
-    # Visualize the episode rewards, episode length, and training error in one figure
+    # Save learned policy weights
+    save_path = "trained_policy.pth"
+    torch.save(agent.policy_net.state_dict(), save_path)
+    print(f"Saved trained policy to {save_path}")
+
+    # Visualize the episode rewards and training error in one figure
     fig, axs = plt.subplots(2, 2)
 
-    # Plot # mapped cells vs. episode
-    axs[0,0].plot(np.arange(1,n_episodes+1), total_mapped_cells)
-    axs[0,0].set_title("# Mapped Cells vs. Episode")
-    axs[0,0].set_xlabel("Episode")
-    axs[0,0].set_ylabel("# Mapped Cells")
-
-    # Plot step count vs. episode
-    axs[0,1].plot(np.arange(1,n_episodes+1), total_step_count)
-    axs[0,1].set_title("# Steps vs. Episode")
-    axs[0,1].set_xlabel("Episode")
-    axs[0,1].set_ylabel("# Steps")
-
-    # Plot step count vs. episode
-    axs[1,0].plot(np.arange(1,n_episodes+1), total_reward)
+    # Plot reward vs. episode
+    axs[1,0].plot(np.arange(1,N_EPISODES+1), total_reward)
     axs[1,0].set_title("Reward vs. Episode")
     axs[1,0].set_xlabel("Episode")
     axs[1,0].set_ylabel("Reward")
 
-    # Plot training error vs. episode 
-    #axs[1].plot(np.arange(1,n_episodes+1), agent.training_error)
-    axs[1,1].plot(np.convolve(agent.training_error, np.ones(100)))
+    # Plot training error vs. episode (smoothed)
+    if len(agent.training_error) > 0:
+        smooth = np.convolve(agent.training_error, np.ones(100)/100, mode='valid')
+        axs[1,1].plot(smooth)
     axs[1,1].set_title("Training Error vs. Episode")
     axs[1,1].set_xlabel("Episode")
-    axs[1,1].set_ylabel("Training Error vs. Episode")
+    axs[1,1].set_ylabel("Training Error")
 
     plt.tight_layout()
     plt.show()
-
-    # Save learned q-values
-    if save == 1:
-        q_values = agent.get_q_values();
-        dill_file = open("q_values.pkl", "wb")
-        dill_file.write(dill.dumps(q_values))
-        dill_file.close()
 
     # Close environment
     env.close()
