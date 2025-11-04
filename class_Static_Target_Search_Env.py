@@ -6,9 +6,7 @@ import numpy as np
 import pygame
 
 class Static_Target_Search_Environment(gym.Env):
-    # Define environment settings
-    # render_modes can be "human" or None
-    # render_fps defines the framerate for rendering
+    # Define environment settings (render mode and framerate)
     metadata = {"render_modes": ["human"], "render_fps": 4}
 
     def __init__(self, render_mode=None):
@@ -18,34 +16,30 @@ class Static_Target_Search_Environment(gym.Env):
         Args:
             render_mode: mode for rendering the environment; can be None or "human"
         """
-
         # Width and length of square-shaped environment
-        # 1414 x 1414 allows distance between agent and target to never exceed 2km
-        self._size = 1414
+        # 1414 x 1414 allows distance between agent and target to never exceed ~2km
+        self._size = 1414.0
         self._max_distance = np.linalg.norm(np.array([self._size-1, self._size-1]))
 
-        # Size of PyGame window (i.e. window_size x window_size pixels)
-        self._window_size = 512 
-
         # Initialize agent location in top-left corner
-        self._starting_location = np.array([0.0, 0.0], dtype=np.float32)
+        self._starting_location = np.array([0.0, self._size-1], dtype=np.float32)
         self._agent_location = self._starting_location.copy()
 
         # Initialize target location in bottom-right corner
-        self._target_location = np.array([float(self._size-1), float(self._size-1)], dtype=np.float32)
+        self._target_location = np.array([self._size-1, 0.0], dtype=np.float32)
 
         # Radius for "found" condition
         self._target_radius = 100.0
 
         # Initialize observation space: agent_x, agent_y, distance_to_target
-        max_dist = float(np.linalg.norm(np.array([self._size-1, self._size-1], dtype=np.float32)))
+        max_dist = np.linalg.norm(np.array([self._size-1, self._size-1], dtype=np.float32))
         self.observation_space = spaces.Box(
-            low=np.array([0.0, 0.0, 0.0], dtype=np.float32),
-            high=np.array([float(self._size-1), float(self._size-1), max_dist], dtype=np.float32),
+            low = np.array([0.0, 0.0, 0.0], dtype=np.float32),
+            high = np.array([self._size-1, self._size-1, max_dist], dtype=np.float32),
             dtype=np.float32
         )
 
-        # Continuous 2D action: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
+        # Initialize action space: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
         self._max_step_size = 20.0
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
@@ -54,7 +48,8 @@ class Static_Target_Search_Environment(gym.Env):
         self._max_steps_per_episode = 200
 
         # Set render mode
-        self.render_mode = render_mode   
+        self.render_mode = render_mode  
+        self._window_size = 512  
         self._window = None
         self._clock = None     
     
@@ -66,9 +61,9 @@ class Static_Target_Search_Environment(gym.Env):
             observation (numpy array): [agent_x, agent_y, distance_to_target]
         """
         return np.array([
-            float(self._agent_location[0]),
-            float(self._agent_location[1]),
-            float(np.linalg.norm(self._agent_location - self._target_location))],
+            self._agent_location[0],
+            self._agent_location[1],
+            np.linalg.norm(self._agent_location-self._target_location)],
         dtype=np.float32)
     
     def _get_info(self):
@@ -123,7 +118,7 @@ class Static_Target_Search_Environment(gym.Env):
         self._agent_location += action * self._max_step_size
 
         # Compute distance to target
-        dist_to_target = float(np.linalg.norm(self._agent_location - self._target_location))
+        dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
 
         # Terminal if within target radius
         terminated = bool(dist_to_target <= self._target_radius)
@@ -153,6 +148,21 @@ class Static_Target_Search_Environment(gym.Env):
 
         return self._get_obs(), reward, terminated, truncated, self._get_info()
     
+    def _env_to_screen(self, location):
+        """
+        Convert environment coordinates to pygame (screen) coordinates by flipping the y-axis
+
+        Args:
+            location (numpy array): [x, y] location in environment coordinates
+
+        Return:
+            screen_location (numpy array): [x_pix, y_pix] location in pygame screen coordinates
+        """
+        pix_square_size = self._window_size / self._size
+        x_pix = (location[0] + 0.5) * pix_square_size
+        y_pix = self._window_size - (location[1] + 0.5) * pix_square_size
+        return np.array([x_pix, y_pix], dtype=int)
+
     def _render_frame(self):
         """Render the next frame"""
 
@@ -160,10 +170,7 @@ class Static_Target_Search_Environment(gym.Env):
         if self._window is None:
             pygame.init()           
             pygame.display.init()   
-            self._window = pygame.display.set_mode(
-                # Set window size
-                (self._window_size, self._window_size)
-            )
+            self._window = pygame.display.set_mode((self._window_size, self._window_size))
 
         # Initialize clock if it hasn't been created yet
         if self._clock is None:
@@ -175,14 +182,13 @@ class Static_Target_Search_Environment(gym.Env):
 
         # Calculate the size of a single cell in pixels (total number of pixes / number of cells)
         pix_square_size = self._window_size / self._size
-       
-        # Draw target as red circle
-        target_center = tuple(((self._target_location + 0.5) * pix_square_size).astype(int))
-        pygame.draw.circle(canvas, (255, 0, 0), target_center, max(4, int(pix_square_size * 0.3)))
- 
 
-        # Draw agent as blue circle
-        agent_center = tuple(((self._agent_location + 0.5) * pix_square_size).astype(int))
+        # Convert coordinates (flip y)
+        target_center = tuple(self._env_to_screen(self._target_location))
+        agent_center = tuple(self._env_to_screen(self._agent_location))
+       
+        # Draw target as red circle and agent as blue circle
+        pygame.draw.circle(canvas, (255, 0, 0), target_center, max(4, int(pix_square_size * 0.3))) 
         pygame.draw.circle(canvas, (0, 0, 255), agent_center, max(4, int(pix_square_size * 0.25)))
 
         # Draw target radius

@@ -6,6 +6,8 @@
 # - Add currents
 # - Add moving target
 # - Add dropped comms
+# - Randomize starting location of agent
+# - Randomize static target location
 # Add multiple agents
 
 import gymnasium as gym
