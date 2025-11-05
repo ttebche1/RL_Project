@@ -1,7 +1,6 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# Switch to SBX
 # Add graphs to plot the training metrics
 # # In no particular order:
 # - Add currents
