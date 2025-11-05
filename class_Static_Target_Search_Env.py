@@ -16,8 +16,8 @@ class static_target_search_env(gym.Env):
         """
         # Set given parameters
         self._size = env_params["env_size"]                                 # Distance from origin in all four directions                             
-        self._target_radius = env_params["target_radius"] / (2*self._size)  # Radius for "found" condition, normalized
-        self._max_step_size = env_params["max_step_size"] / (2*self._size)  # Maximum step size in meters, normalized
+        self._target_radius = env_params["target_radius"] / self._size      # Radius for "found" condition, normalized
+        self._max_step_size = env_params["max_step_size"] / self._size      # Maximum step size in meters, normalized
         self._max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
         #self._dist_noise_std = env_params["dist_noise_std"] / self._size   # Standard deviation of Gaussian noise added to distance measurements, normalized      
 
@@ -197,7 +197,8 @@ class static_target_search_env(gym.Env):
         pygame.draw.circle(canvas, (255, 0, 0), target_center, circle_radius)  # target: red
 
         # Draw target radius scaled to window size
-        radius_pix = int(self._target_radius * self._window_size / 2)  # environment is [-1,1], width=2 units
+        pixels_per_unit = self._window_size / 2  
+        radius_pix = int(self._target_radius * pixels_per_unit)  
         if radius_pix > 0:
             pygame.draw.circle(canvas, (255, 0, 0), target_center, radius_pix, width=1)
 
