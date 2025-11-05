@@ -1,8 +1,8 @@
 # Train SAC DRL model on Static Target Search Environment
 
 # TO DO:
-# Play around with reward function and amount of training episodes to get a working model
-# In no particular order:
+# Add graphs to plot the training metrics
+# # In no particular order:
 # - Add currents
 # - Add moving target
 # - Add dropped comms
@@ -12,10 +12,7 @@
 # - Limited power
 # - Update model to angle-based
 # - switch to sbx
-
-# Look at reward vs episode plots and other standard plots; make sure the reward vs episode is increasing
-# Look at the documentation
-# Use their reward fct
+# - use their reward function
 
 from class_Static_Target_Search_Env import Static_Target_Search_Environment 
 from stable_baselines3 import SAC
