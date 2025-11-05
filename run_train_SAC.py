@@ -1,7 +1,6 @@
 # Train SAC DRL model on Static Target Search Environment
 
 # TO DO:
-# Add environment checker from stable_baselines3
 # Switch to SBX
 # Add graphs to plot the training metrics
 # # In no particular order:

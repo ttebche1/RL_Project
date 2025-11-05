@@ -1,4 +1,4 @@
-# Test script for Static Target Search Environment
+# Test script for the graphics of the static target search environment
 
 from class_static_target_search_env import static_target_search_env
 
