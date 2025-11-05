@@ -15,14 +15,14 @@
 # - Update model to angle-based
 # - use their reward function
 
-from class_Static_Target_Search_Env import Static_Target_Search_Environment 
+from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 if __name__ == "__main__":
     # Create vectorized environments
     num_envs = 12
-    env_fns = [lambda: Static_Target_Search_Environment(render_mode=None) for _ in range(num_envs)]
+    env_fns = [lambda: static_target_search_env(render_mode=None) for _ in range(num_envs)]
     vec_env = DummyVecEnv(env_fns)
 
     # Initialize SAC agent

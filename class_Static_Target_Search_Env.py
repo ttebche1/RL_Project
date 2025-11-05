@@ -5,7 +5,7 @@ import gymnasium as gym
 import numpy as np
 import pygame
 
-class Static_Target_Search_Environment(gym.Env):
+class static_target_search_env(gym.Env):
     # Define environment settings (render mode and framerate)
     metadata = {"render_modes": ["human"], "render_fps": 4}
 
