@@ -1,10 +1,10 @@
 # Test script for Static Target Search Environment
 
-from class_Static_Target_Search_Env import Static_Target_Search_Environment
+from class_static_target_search_env import static_target_search_env
 
 if __name__ == "__main__":
     # Initialize environment
-    env = Static_Target_Search_Environment(render_mode="human")
+    env = static_target_search_env(render_mode="human")
     obs, info = env.reset()
     done = False
     truncated = False
