@@ -2,13 +2,14 @@
 
 # TO DO:
 # - Add currents
+# - Add dropped comms
 # - Update model to angle-based
 # - Use their reward function
+# - Add error to distance function
 #
 # In no particular order:
 # - Try to speed up training
 # - Add moving target
-# - Add dropped comms
 # - Randomize starting location of agent
 # - Randomize static target location
 # - Add multiple agents
