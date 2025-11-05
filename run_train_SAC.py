@@ -85,7 +85,7 @@ def combine_logs():
 
 if __name__ == "__main__":
     # User parameters
-    num_envs = 12                   # Number of parallel environments
+    num_envs = 8                    # Number of parallel environments
     batch_size = 32                 # Number of samples used from the buffer per gradient update
     buffer_size = int(1e6)          # Number of past experiences to store
     learning_starts = 10000         # Number of exploration timesteps to collect before training starts
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     gamma = 0.99                    # Discount factor for future rewards (heavily considers future rewards)
     train_freq = 20                 # How often to update the NNs
     gradient_steps = 5              # How many gradient steps to take during each update
-    learning_rate=1e-4              # How fast the NNs update
+    learning_rate = 1e-4            # How fast the NNs update
     target_update_interval = 3000   # How often to update the target NN
     total_timesteps = int(2e6)      # Total timesteps to train the agent
 
