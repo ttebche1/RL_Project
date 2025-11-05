@@ -6,8 +6,8 @@ from stable_baselines3.common.env_checker import check_env
 if __name__ == "__main__":
     # Initialize environment
     env_params = {
-        "env_size": 1414.0,             # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
-        "target_radius": 100.0,         # Radius for "found" condition in meters
+        "env_size": 2000.0,             # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
+        "target_radius": 300.0,         # Radius for "found" condition in meters
         "max_step_size": 10.0,          # Maximum step size in meters
         "max_steps_per_episode": 200,   # Max steps per episode
         "dist_noise_std": 0.5,          # Standard deviation of Gaussian noise added to distance measurements (meters)

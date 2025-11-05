@@ -1,1 +1,1 @@
-{"env_size": 707, "target_radius": 300.0, "max_step_size": 30.0, "max_steps_per_episode": 200, "dist_noise_std": 1}
+{"env_size": 1000.0, "target_radius": 300.0, "max_step_size": 30.0, "max_steps_per_episode": 200, "dist_noise_std": 1}

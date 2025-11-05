@@ -1,9 +1,12 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# - Remove randomizing the target location
-# - Remove adding noise to distance measurements
-# - Reset reward function to -dist_to_target
+# - Add dropped measurements
+# - Add random noise to distance measurements
+# - Add random target locations
+# - Use their reward function
+#
+# Once it's working again:
 # - Update model to angle-based
 # - Add currents
 # - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
@@ -48,7 +51,7 @@ def create_vec_env(num_envs, env_params):
 
 if __name__ == "__main__":
     # User parameters
-    num_envs = 12 #8                        # Number of parallel environments
+    num_envs = 32 #8                        # Number of parallel environments
     batch_size = 32                         # Number of samples used from the buffer per gradient update
     buffer_size = int(1e6)                  # Number of past experiences to store
     learning_starts = 10000                 # Number of exploration timesteps to collect before training starts
