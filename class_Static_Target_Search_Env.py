@@ -19,14 +19,14 @@ class static_target_search_env(gym.Env):
         self._target_radius = env_params["target_radius"] / self._size      # Radius for "found" condition, normalized
         self._max_step_size = env_params["max_step_size"] / self._size      # Maximum step size in meters, normalized
         self._max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
-        #self._dist_noise_std = env_params["dist_noise_std"] / self._size   # Standard deviation of Gaussian noise added to distance measurements, normalized      
+        #self._dist_noise_std = env_params["dist_noise_std"] / self._size    # Standard deviation of Gaussian noise added to distance measurements, normalized      
 
         # Initialize agent and target locations, normalized
         self._starting_location = np.array([-1.0, 1.0], dtype=np.float32)   
         self._agent_location = self._starting_location.copy()                                       # Top-left corner
         #self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
         self._target_location = np.array([1.0, -1.0], dtype=np.float32)
-        #self._last_dist_to_target = 2 * self._size
+        self._last_dist_to_target = 2 * self._size
 
         # Initialize observation space: agent_x, agent_y, distance_to_target
         self.observation_space = spaces.Box(
@@ -57,8 +57,7 @@ class static_target_search_env(gym.Env):
         return np.array([
             self._agent_location[0],
             self._agent_location[1],
-            np.linalg.norm(self._agent_location - self._target_location)],
-            #self._last_dist_to_target],
+            self._last_dist_to_target],
         dtype=np.float32)
     
     def _get_info(self):

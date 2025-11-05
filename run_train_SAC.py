@@ -6,10 +6,10 @@
 # - Use their reward function
 #
 # Once it's working again:
-# - Update model to angle-based
-# - Add currents
 # - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Update observation space to include agent's position at the last measured distance
+# - Update model to angle-based
+# - Add currents
 #
 # In no particular order:
 # - Add moving target
