@@ -1,18 +1,18 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# Add graphs to plot the training metrics
-# # In no particular order:
-# - Try to speed up training
 # - Add currents
+# - Update model to angle-based
+# - Use their reward function
+#
+# In no particular order:
+# - Try to speed up training
 # - Add moving target
 # - Add dropped comms
 # - Randomize starting location of agent
 # - Randomize static target location
 # - Add multiple agents
 # - Limited power
-# - Update model to angle-based
-# - use their reward function
 # - automate hyperparameter tuning
 
 from class_static_target_search_env import static_target_search_env 
