@@ -65,7 +65,7 @@ def plot_training_results(df, reward_window=50, episode_window=50):
 
 if __name__ == "__main__":
     # User settings
-    csv_file = "training_log_1.csv" # Combined CSV
+    csv_file = "training_log.csv" # Combined CSV
     reward_window = 50
     episode_window = 50
 

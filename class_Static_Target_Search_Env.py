@@ -6,26 +6,21 @@ import numpy as np
 import pygame
 
 class static_target_search_env(gym.Env):
-    def __init__(self, env_size, target_radius, max_step_size,
-                 max_steps_per_episode, dist_noise_std, dist_noise_bias, 
-                 render_mode=None):
+    def __init__(self, env_params, render_mode=None):
         """
         Initialize environment
 
         Args:
-            env_size (float): Width and length of the environment in meters.
-            target_radius (float): Radius for "found" condition in meters.
-            max_step_size (float): Maximum step size in meters.
-            max_steps_per_episode (int): Maximum steps per episode.
+            env_params (dict): Parameters for the static target search environment
             render_mode: mode for rendering the environment; can be None or "human"
         """
         # Set given parameters
-        self._size = env_size                               # Width and length of square-shaped environment
-        self._target_radius = target_radius                 # Radius for "found" condition
-        self._max_step_size = max_step_size                 # Maximum step size in meters
-        self._max_steps_per_episode = max_steps_per_episode # Maximum steps per episode
-        self._dist_noise_std = dist_noise_std               # Standard deviation of Gaussian noise added to distance measurements (meters)
-        self._dist_noise_bias = dist_noise_bias             # Constant bias added to distance measurements (meters)
+        self._size = env_params["env_size"]                                 # Width and length of environment in meters                             
+        self._target_radius = env_params["target_radius"]                   # Radius for "found" condition in meters
+        self._max_step_size = env_params["max_step_size"]                   # Maximum step size in meters
+        self._max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
+        self._dist_noise_std = env_params["dist_noise_std"]                 # Standard deviation of Gaussian noise added to distance measurements (meters)        
+        self._dist_noise_bias = env_params["dist_noise_bias"]               # Constant bias added to distance measurements (meters)
 
         # Initialize agent and target location
         self._starting_location = np.array([0.0, self._size-1], dtype=np.float32)   

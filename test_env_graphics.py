@@ -4,9 +4,15 @@ from class_static_target_search_env import static_target_search_env
 
 if __name__ == "__main__":
     # Initialize environment
-    env = static_target_search_env(env_size=100.0, target_radius=5.0, max_steps_per_episode=100, 
-                                   max_step_size=10.0, dist_noise_std=1.0, dist_noise_bias=0.5, 
-                                   render_mode="human")
+    env_params = {
+        "env_size": 1414.0,             # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
+        "target_radius": 100.0,         # Radius for "found" condition in meters
+        "max_step_size": 10.0,          # Maximum step size in meters
+        "max_steps_per_episode": 200,   # Max steps per episode
+        "dist_noise_std": 0.5,          # Standard deviation of Gaussian noise added to distance measurements (meters)
+        "dist_noise_bias": 0.0          # Constant bias added to distance measurements (meters)
+    }
+    env = static_target_search_env(env_params, render_mode="human")
     obs, info = env.reset()
     done = False
     truncated = False
