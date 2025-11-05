@@ -6,44 +6,44 @@ import numpy as np
 import pygame
 
 class static_target_search_env(gym.Env):
-    # Define environment settings (render mode and framerate)
-    metadata = {"render_modes": ["human"], "render_fps": 4}
-
-    def __init__(self, render_mode=None):
+    def __init__(self, env_size, target_radius, max_step_size,
+                 max_steps_per_episode, dist_noise_std, dist_noise_bias, 
+                 render_mode=None):
         """
         Initialize environment
 
         Args:
+            env_size (float): Width and length of the environment in meters.
+            target_radius (float): Radius for "found" condition in meters.
+            max_step_size (float): Maximum step size in meters.
+            max_steps_per_episode (int): Maximum steps per episode.
             render_mode: mode for rendering the environment; can be None or "human"
         """
-        # Width and length of square-shaped environment
-        # 1414 x 1414 allows distance between agent and target to never exceed ~2km
-        self._size = 1414.0
+        # Set given parameters
+        self._size = env_size                               # Width and length of square-shaped environment
+        self._target_radius = target_radius                 # Radius for "found" condition
+        self._max_step_size = max_step_size                 # Maximum step size in meters
+        self._max_steps_per_episode = max_steps_per_episode # Maximum steps per episode
+        self._dist_noise_std = dist_noise_std               # Standard deviation of Gaussian noise added to distance measurements (meters)
+        self._dist_noise_bias = dist_noise_bias             # Constant bias added to distance measurements (meters)
 
-        # Initialize agent location in top-left corner
-        self._starting_location = np.array([0.0, self._size-1], dtype=np.float32)
-        self._agent_location = self._starting_location.copy()
-
-        # Initialize target location in bottom-right corner
-        self._target_location = np.array([self._size-1, 0.0], dtype=np.float32)
-
-        # Radius for "found" condition
-        self._target_radius = 100.0
+        # Initialize agent and target location
+        self._starting_location = np.array([0.0, self._size-1], dtype=np.float32)   
+        self._agent_location = self._starting_location.copy()                   # Top-left corner
+        self._target_location = np.array([self._size-1, 0.0], dtype=np.float32) # Bottom-right corner
 
         # Initialize observation space: agent_x, agent_y, distance_to_target
         self.observation_space = spaces.Box(
-            low=np.array([-np.inf, -np.inf, 0.0], dtype=np.float32),
-            high=np.array([np.inf, np.inf, np.inf], dtype=np.float32),
-            dtype=np.float32
+            low = np.array([-np.inf, -np.inf, 0.0], dtype=np.float32),
+            high = np.array([np.inf, np.inf, np.inf], dtype=np.float32),
+            dtype = np.float32
         )
 
         # Initialize action space: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
-        self._max_step_size = 10.0
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
-        # Set max number of steps per episode
+        # Initialize number of steps taken in current episode
         self._step_count = 0
-        self._max_steps_per_episode = 200
 
         # Set render mode
         self.render_mode = render_mode  
@@ -58,10 +58,15 @@ class static_target_search_env(gym.Env):
         Return:
             observation (numpy array): [agent_x, agent_y, distance_to_target]
         """
+        # Compute noisy distance to target
+        dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
+        dist_noise = np.random.normal(loc=self._dist_noise_bias, scale=self._dist_noise_std)
+        dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)
+
         return np.array([
             self._agent_location[0]/self._size,
             self._agent_location[1]/self._size,
-            np.linalg.norm(self._agent_location-self._target_location)/self._size],
+            dist_to_target_noisy/self._size],
         dtype=np.float32)
     
     def _get_info(self):
@@ -117,16 +122,18 @@ class static_target_search_env(gym.Env):
 
         # Compute distance to target
         dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
+        dist_noise = np.random.normal(loc=self._dist_noise_bias, scale=self._dist_noise_std)
+        dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)
 
         # Terminal if within target radius
-        terminated = bool(dist_to_target <= self._target_radius)
+        terminated = bool(dist_to_target_noisy <= self._target_radius)
 
         # Truncate if max steps reached
         self._step_count += 1
         truncated = self._step_count >= self._max_steps_per_episode
 
         # Set reward
-        reward = float(-dist_to_target/self._size) 
+        reward = float(-dist_to_target_noisy/self._size) 
         if terminated:  
             reward += 10.0
 
@@ -186,8 +193,8 @@ class static_target_search_env(gym.Env):
         pygame.event.pump()
         pygame.display.update()
 
-        # Update at the specified framerate
-        self._clock.tick(self.metadata["render_fps"])
+        # Update at 4 frames per second
+        self._clock.tick(4)
         
     def close(self):
         """Close pygame resources if the window has been initialized and is active"""

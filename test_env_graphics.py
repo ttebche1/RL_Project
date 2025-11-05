@@ -4,7 +4,9 @@ from class_static_target_search_env import static_target_search_env
 
 if __name__ == "__main__":
     # Initialize environment
-    env = static_target_search_env(render_mode="human")
+    env = static_target_search_env(env_size=100.0, target_radius=5.0, max_steps_per_episode=100, 
+                                   max_step_size=10.0, dist_noise_std=1.0, dist_noise_bias=0.5, 
+                                   render_mode="human")
     obs, info = env.reset()
     done = False
     truncated = False
