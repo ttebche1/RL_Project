@@ -1,6 +1,8 @@
 # Train SAC DRL model on Static Target Search Environment
 
 # TO DO:
+# Add environment checker from stable_baselines3
+# Switch to SBX
 # Add graphs to plot the training metrics
 # # In no particular order:
 # - Add currents
@@ -11,7 +13,6 @@
 # - Add multiple agents
 # - Limited power
 # - Update model to angle-based
-# - switch to sbx
 # - use their reward function
 
 from class_Static_Target_Search_Env import Static_Target_Search_Environment 
