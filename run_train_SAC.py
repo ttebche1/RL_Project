@@ -1,20 +1,19 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
+# - Use their reward function
 # - Add currents
 # - Add dropped comms
 # - Update model to angle-based
-# - Use their reward function
+# - Update observation space
 #
 # In no particular order:
-# - Try to speed up training
-# - Add moving target
 # - Randomize starting location of agent
 # - Randomize static target location
+# - Add moving target
 # - Add multiple agents
 # - Limited power
-# - automate hyperparameter tuning
-# - Make distance noise more realistic (based on real sensors)
+# - Automate hyperparameter tuning
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
@@ -85,24 +84,24 @@ def combine_logs():
 
 if __name__ == "__main__":
     # User parameters
-    num_envs = 32 #8                # Number of parallel environments
-    batch_size = 32                 # Number of samples used from the buffer per gradient update
-    buffer_size = int(1e6)          # Number of past experiences to store
-    learning_starts = 10000         # Number of exploration timesteps to collect before training starts
-    tau = 0.01                      # Target network update rate (slow updates)
-    gamma = 0.99                    # Discount factor for future rewards (heavily considers future rewards)
-    train_freq = 20                 # How often to update the NNs
-    gradient_steps = 5              # How many gradient steps to take during each update
-    learning_rate = 1e-4            # How fast the NNs update
-    target_update_interval = 3000   # How often to update the target NN
-    total_timesteps = int(2e6)      # Total timesteps to train the agent
+    num_envs = 32 #8                        # Number of parallel environments
+    batch_size = 32                         # Number of samples used from the buffer per gradient update
+    buffer_size = int(1e6)                  # Number of past experiences to store
+    learning_starts = 10000                 # Number of exploration timesteps to collect before training starts
+    tau = 0.01                              # Target network update rate (slow updates)
+    gamma = 0.99                            # Discount factor for future rewards (heavily considers future rewards)
+    train_freq = 20                         # How often to update the NNs
+    gradient_steps = 5                      # How many gradient steps to take during each update
+    learning_rate = 1e-4                    # How fast the NNs update
+    target_update_interval = 3000           # How often to update the target NN
+    total_timesteps = int(3e6) #int(2e6)    # Total timesteps to train the agent
     env_params = {
-        "env_size": 1414.0,             # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
-        "target_radius": 100.0,         # Radius for "found" condition in meters
-        "max_step_size": 10.0,          # Maximum step size in meters
-        "max_steps_per_episode": 200,   # Max steps per episode
-        "dist_noise_std": 0.5,          # Standard deviation of Gaussian noise added to distance measurements (meters)
-        "dist_noise_bias": 0.0          # Constant bias added to distance measurements (meters)
+        "env_size": 1414.0,                 # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
+        "target_radius": 100.0,             # Radius for "found" condition in meters
+        "max_step_size": 20.0,              # Maximum step size in meters
+        "max_steps_per_episode": 500, #200  # Max steps per episode
+        "dist_noise_std": 0.5,              # Standard deviation of Gaussian noise added to distance measurements (meters)
+        "dist_noise_bias": 0.0              # Constant bias added to distance measurements (meters)
     }
 
     # Create vectorized environments with training result logs
