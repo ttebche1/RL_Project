@@ -3,6 +3,7 @@
 # TO DO:
 # Add graphs to plot the training metrics
 # # In no particular order:
+# - Try to speed up training
 # - Add currents
 # - Add moving target
 # - Add dropped comms
@@ -12,6 +13,7 @@
 # - Limited power
 # - Update model to angle-based
 # - use their reward function
+# - automate hyperparameter tuning
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
@@ -23,7 +25,7 @@ import shutil
 
 def create_vec_env(num_envs):
     """
-    Create a vectorized environment with Monitor logging.
+    Create a vectorized environment with training result logging
     
     Args:
         num_envs (int): Number of parallel environments.
@@ -48,6 +50,38 @@ def create_vec_env(num_envs):
 
     # Create and return vectorized environment
     return DummyVecEnv(env_fns)
+
+def combine_logs():
+    """
+    Combines all per-environment training result logs into a single file and deletes the original logs
+    """
+    # Set file/path names
+    log_dir = "monitor_logs"
+    combined_file = "training_log.csv"
+
+    # Check that the log directory exists
+    if not os.path.exists(log_dir):
+        print(f"No log directory '{log_dir}' found.")
+        return
+
+    # Read all CSVs and add 'env_id' column
+    all_dfs = []
+    for file in os.listdir(log_dir):
+        if file.endswith(".csv"):
+            df = pd.read_csv(os.path.join(log_dir, file), skiprows=1)   # Skip Monitor header
+            df['env_id'] = file.split(".")[0]                           # Track which env this came from
+            all_dfs.append(df)
+
+    # Combine all dataframes
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+
+    # Save combined CSV
+    combined_df.to_csv(combined_file, index=False)
+    print(f"Combined CSV saved as '{combined_file}'")
+
+    # Delete the original folder with individual CSVs
+    shutil.rmtree(log_dir)
+    print(f"Deleted folder '{log_dir}' and all individual logs")
 
 if __name__ == "__main__":
     # User parameters
@@ -88,3 +122,6 @@ if __name__ == "__main__":
 
     # Close environments
     vec_env.close()
+
+    # Combine individual training logs
+    combine_logs()
