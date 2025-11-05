@@ -1,4 +1,4 @@
-# Train SAC DRL model on Static Target Search Environment
+# Train SAC DRL model on the static target search environment
 
 # TO DO:
 # Switch to SBX

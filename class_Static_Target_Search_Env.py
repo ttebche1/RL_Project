@@ -1,4 +1,4 @@
-# Class for Environment that Enables an Agent to Search for a Static Target
+# Class for environment that enables an agent to search for a static target
 
 from gymnasium import spaces
 import gymnasium as gym
