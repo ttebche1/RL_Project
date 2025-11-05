@@ -82,7 +82,7 @@ class static_target_search_env(gym.Env):
         # Initialize agent and target location
         self._agent_location = self._starting_location.copy()                                       # Top-left corner
         #self._target_location = np.random.uniform(low=-1.0, high=1, size=(2,)).astype(np.float32)   # Random target location
-        #self._last_dist_to_target = 2 * self._size
+        self._last_dist_to_target = 2 * self._size
 
         # Initialize step count
         self._step_count = 0
@@ -115,14 +115,16 @@ class static_target_search_env(gym.Env):
         self._agent_location += action * self._max_step_size
 
         # Get distance to target
-        #if np.random.rand() < 0.1:                              # 10% probability of lost measurement
+        if np.random.rand() < 0.1:                              # 10% probability of lost measurement
         #    dist_to_target_noisy = self._last_dist_to_target    # Retain last distance
+            dist_to_target = self._last_dist_to_target
         #else:
             #dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
             #dist_noise = np.random.normal(loc=0.01*dist_to_target, scale=self._dist_noise_std)
             #dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)    # Compute new distance with noise
             #self._last_dist_to_target = dist_to_target_noisy                # Update last distance
         dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
+        self._last_dist_to_target = dist_to_target
 
         # Terminal if within target radius
         #terminated = bool(dist_to_target_noisy <= self._target_radius)

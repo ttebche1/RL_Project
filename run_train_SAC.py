@@ -1,7 +1,6 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# - Add dropped measurements
 # - Add random noise to distance measurements
 # - Add random target locations
 # - Use their reward function
