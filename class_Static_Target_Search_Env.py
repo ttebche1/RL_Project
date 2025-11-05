@@ -20,12 +20,11 @@ class static_target_search_env(gym.Env):
         self._max_step_size = env_params["max_step_size"]                   # Maximum step size in meters
         self._max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
         self._dist_noise_std = env_params["dist_noise_std"]                 # Standard deviation of Gaussian noise added to distance measurements (meters)        
-        self._dist_noise_bias = env_params["dist_noise_bias"]               # Constant bias added to distance measurements (meters)
 
         # Initialize agent and target location
         self._starting_location = np.array([0.0, self._size-1], dtype=np.float32)   
-        self._agent_location = self._starting_location.copy()                   # Top-left corner
-        self._target_location = np.array([self._size-1, 0.0], dtype=np.float32) # Bottom-right corner
+        self._agent_location = self._starting_location.copy()                                               # Top-left corner
+        self._target_location = np.random.uniform(low=0.0, high=self._size-1, size=(2,)).astype(np.float32) # Random target location
 
         # Initialize observation space: agent_x, agent_y, distance_to_target
         self.observation_space = spaces.Box(
@@ -55,7 +54,7 @@ class static_target_search_env(gym.Env):
         """
         # Compute noisy distance to target
         dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
-        dist_noise = np.random.normal(loc=self._dist_noise_bias, scale=self._dist_noise_std)
+        dist_noise = np.random.normal(loc=0.01*dist_to_target, scale=self._dist_noise_std)
         dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)
 
         return np.array([
@@ -82,8 +81,9 @@ class static_target_search_env(gym.Env):
         # Set the seed of the reset function in gym.Env (parent class)
         super().reset(seed=seed)
 
-        # Initialize agent location to starting location
-        self._agent_location = self._starting_location.copy()
+        # Initialize agent and target location
+        self._agent_location = self._starting_location.copy()                                               # Top-left corner
+        self._target_location = np.random.uniform(low=0.0, high=self._size-1, size=(2,)).astype(np.float32) # Random target location
 
         # Initialize step count
         self._step_count = 0
@@ -117,7 +117,7 @@ class static_target_search_env(gym.Env):
 
         # Compute distance to target
         dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
-        dist_noise = np.random.normal(loc=self._dist_noise_bias, scale=self._dist_noise_std)
+        dist_noise = np.random.normal(loc=0.01*dist_to_target, scale=self._dist_noise_std)
         dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)
 
         # Terminal if within target radius

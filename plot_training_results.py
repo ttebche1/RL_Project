@@ -1,9 +1,10 @@
+from scipy.signal import savgol_filter
 import pandas as pd
 import matplotlib.pyplot as plt
 
 def load_training_log(csv_file):
     """
-    Load the training CSV and check required columns ('r', 'l', 't', 'env_id')
+    Load the training CSV and check required columns ('r', 'l', 't')
 
     Args:
         csv_file (str): Path to the CSV file
@@ -11,10 +12,10 @@ def load_training_log(csv_file):
     Returns:
         pd.DataFrame: Loaded dataframe
     """
-    df = pd.read_csv(csv_file)
+    df = pd.read_csv(csv_file, skiprows=1)
 
     # Check required columns
-    for col in ['r', 'l', 't', 'env_id']:
+    for col in ['r', 'l', 't']:
         if col not in df.columns:
             raise ValueError(f"CSV does not contain required column '{col}'.")
 
@@ -22,52 +23,47 @@ def load_training_log(csv_file):
 
 def plot_training_results(df, reward_window=50, episode_window=50):
     """
-    Plot training results, overlaying each environment based on 'env_id'.
+    Plot training results for a single environment
 
     Args:
         df (pd.DataFrame): Dataframe containing training log
         reward_window (int): Window size for smoothing rewards
         episode_window (int): Window size for smoothing episode lengths
     """
-    # Create a figure with 3 subplots
-    fig, axes = plt.subplots(3, 1, figsize=(12, 12))
+    fig, axes = plt.subplots(3, 1, figsize=(12, 8))
 
-    # 1. Reward per episode (overlay by env_id)
-    for env_id, env_df in df.groupby('env_id'):
-        env_df = env_df.reset_index(drop=True)
-        env_df['reward_smooth'] = env_df['r'].rolling(reward_window).mean()
-        axes[0].plot(env_df['reward_smooth'], alpha=0.7, label=f"{env_id}")
+    # 1. Smoothed Reward per episode
+    df['reward_smooth'] = df['r'].rolling(reward_window).mean()
+    axes[0].plot(df['reward_smooth'], color='blue')
     axes[0].set_xlabel("Episode")
     axes[0].set_ylabel("Reward")
-    axes[0].set_title(f"Smoothed Reward per Episode (Overlayed Environments)")
+    axes[0].set_title(f"Smoothed Reward per Episode")
     axes[0].grid(True)
 
-    # 2. Episode length per episode (overlay by env_id)
-    for env_id, env_df in df.groupby('env_id'):
-        env_df = env_df.reset_index(drop=True)
-        env_df['episode_smooth'] = env_df['l'].rolling(episode_window).mean()
-        axes[1].plot(env_df['episode_smooth'], alpha=0.7)
+    # 2. Smoothed Episode length per episode
+    df['episode_smooth'] = df['l'].rolling(episode_window).mean()
+    axes[1].plot(df['episode_smooth'], color='green')
     axes[1].set_xlabel("Episode")
     axes[1].set_ylabel("Episode Length")
-    axes[1].set_title(f"Smoothed Episode Length per Episode (Overlayed Environments)")
+    axes[1].set_title(f"Smoothed Episode Length per Episode")
     axes[1].grid(True)
 
-    # 3. Reward over wall-clock time (overlay by env_id)
-    for env_id, env_df in df.groupby('env_id'):
-        axes[2].plot(env_df['t'], env_df['r'], alpha=0.7)
+    # 3. Reward over wall-clock time
+    axes[2].plot(df['t'], df['r'], color='red')
     axes[2].set_xlabel("Time (s)")
     axes[2].set_ylabel("Reward")
-    axes[2].set_title("Reward vs Time (Overlayed Environments)")
+    axes[2].set_title("Reward vs Time")
     axes[2].grid(True)
 
     plt.tight_layout()
     plt.show()
 
+
 if __name__ == "__main__":
     # User settings
-    csv_file = "training_log.csv" # Combined CSV
-    reward_window = 50
-    episode_window = 50
+    csv_file = "training.monitor.csv"
+    reward_window = 75
+    episode_window = 75
 
     # Load CSV
     df = load_training_log(csv_file)

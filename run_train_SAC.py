@@ -1,28 +1,22 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# - Use their reward function
-# - Add currents
-# - Add dropped comms
 # - Update model to angle-based
-# - Update observation space
+# - Add currents
+# - Furthermore,if thedistancebetween the agent and the target is greater than a threshold, theagent does not receive a range measurement and, therefore, is encouraged to search for the target
+# - Dropping factor of 10% to simulate the lack of communication/range measurements between the agent and the target.
 #
 # In no particular order:
-# - Randomize starting location of agent
-# - Randomize static target location
+# - Use their reward function
 # - Add moving target
 # - Add multiple agents
-# - Limited power
-# - Automate hyperparameter tuning
+# - Add 3D environment (depth)
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 import json
-import os
-import pandas as pd
-import shutil
 
 def create_vec_env(num_envs, env_params):
     """
@@ -34,57 +28,23 @@ def create_vec_env(num_envs, env_params):
     Returns:
         DummyVecEnv: Vectorized environment with Monitor logging.
     """
-    # Create directory for training results
-    log_dir = "monitor_logs"
-    os.makedirs(log_dir, exist_ok=True)
+    def make_env(i):
+        def _init():
+            env = static_target_search_env(env_params)
+            if i == 0:
+                # Only log first environment directly to a CSV in the current directory
+                return Monitor(env, filename=f"training")
+            else:
+                # Skip Monitor wrapper for other environments
+                return env
+        return _init
 
-    # Create environments with training result logs
-    env_fns = [
-        lambda i=i: Monitor(
-            static_target_search_env(env_params),
-            filename=os.path.join(log_dir, f"env_{i}.csv")
-        )
-        for i in range(num_envs)
-    ]
-
-    # Create and return vectorized environment
+    env_fns = [make_env(i) for i in range(num_envs)]
     return DummyVecEnv(env_fns)
-
-def combine_logs():
-    """
-    Combines all per-environment training result logs into a single file and deletes the original logs
-    """
-    # Set file/path names
-    log_dir = "monitor_logs"
-    combined_file = "training_log.csv"
-
-    # Check that the log directory exists
-    if not os.path.exists(log_dir):
-        print(f"No log directory '{log_dir}' found.")
-        return
-
-    # Read all CSVs and add 'env_id' column
-    all_dfs = []
-    for file in os.listdir(log_dir):
-        if file.endswith(".csv"):
-            df = pd.read_csv(os.path.join(log_dir, file), skiprows=1)   # Skip Monitor header
-            df['env_id'] = file.split(".")[0]                           # Track which env this came from
-            all_dfs.append(df)
-
-    # Combine all dataframes
-    combined_df = pd.concat(all_dfs, ignore_index=True)
-
-    # Save combined CSV
-    combined_df.to_csv(combined_file, index=False)
-    print(f"Combined CSV saved as '{combined_file}'")
-
-    # Delete the original folder with individual CSVs
-    shutil.rmtree(log_dir)
-    print(f"Deleted folder '{log_dir}' and all individual logs")
 
 if __name__ == "__main__":
     # User parameters
-    num_envs = 32 #8                        # Number of parallel environments
+    num_envs = 128 #8                       # Number of parallel environments
     batch_size = 32                         # Number of samples used from the buffer per gradient update
     buffer_size = int(1e6)                  # Number of past experiences to store
     learning_starts = 10000                 # Number of exploration timesteps to collect before training starts
@@ -92,16 +52,15 @@ if __name__ == "__main__":
     gamma = 0.99                            # Discount factor for future rewards (heavily considers future rewards)
     train_freq = 20                         # How often to update the NNs
     gradient_steps = 5                      # How many gradient steps to take during each update
-    learning_rate = 1e-4                    # How fast the NNs update
+    learning_rate = 3e-4 #1e4               # How fast the NNs update
     target_update_interval = 3000           # How often to update the target NN
-    total_timesteps = int(3e6) #int(2e6)    # Total timesteps to train the agent
+    total_timesteps = int(5e6) #int(2e6)    # Total timesteps to train the agent
     env_params = {
-        "env_size": 1414.0,                 # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
-        "target_radius": 100.0,             # Radius for "found" condition in meters
-        "max_step_size": 20.0,              # Maximum step size in meters
-        "max_steps_per_episode": 500, #200  # Max steps per episode
-        "dist_noise_std": 0.5,              # Standard deviation of Gaussian noise added to distance measurements (meters)
-        "dist_noise_bias": 0.0              # Constant bias added to distance measurements (meters)
+        "env_size": 707,                    # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
+        "target_radius": 25.0,              # Radius for "found" condition in meters
+        "max_step_size": 30.0,              # Maximum step size in meters
+        "max_steps_per_episode": 200,       # Max steps per episode
+        "dist_noise_std": 1,                # Standard deviation of Gaussian noise added to distance measurements (meters)
     }
 
     # Create vectorized environments with training result logs
@@ -119,7 +78,7 @@ if __name__ == "__main__":
                 train_freq=train_freq, gradient_steps=gradient_steps,             
                 learning_rate=learning_rate, target_update_interval=target_update_interval,
                 ent_coef="auto", seed = 3)
-
+    
     # Train agent
     model.learn(total_timesteps=total_timesteps, progress_bar=True)
 
@@ -130,6 +89,3 @@ if __name__ == "__main__":
 
     # Close environments
     vec_env.close()
-
-    # Combine individual training logs
-    combine_logs()
