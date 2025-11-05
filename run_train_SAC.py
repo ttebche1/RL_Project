@@ -61,13 +61,13 @@ if __name__ == "__main__":
     gradient_steps = 5                      # How many gradient steps to take during each update
     learning_rate = 3e-4 #1e4               # How fast the NNs update
     target_update_interval = 3000           # How often to update the target NN
-    total_timesteps = int(2e6) #int(5e6)MEE    # Total timesteps to train the agent
+    total_timesteps = int(2e6)              # Total timesteps to train the agent
     env_params = {
-        "env_size": 1000.0,                 # Width and length of the environment in meters
+        "env_size": 1000.0,                 # Distance from the origin in all four directions in meters
         "target_radius": 300.0,             # Radius for "found" condition in meters
         "max_step_size": 30.0,              # Maximum step size in meters
         "max_steps_per_episode": 200,       # Max steps per episode
-        "dist_noise_std": 1,                # Standard deviation of Gaussian noise added to distance measurements (meters)
+        "dist_noise_std": 1,                # Standard deviation of Gaussian noise added to distance measurements in meters
     }
 
     # Create vectorized environments with training result logs
