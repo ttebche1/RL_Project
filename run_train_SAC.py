@@ -3,14 +3,15 @@
 # TO DO:
 # - Update model to angle-based
 # - Add currents
-# - Furthermore,if thedistancebetween the agent and the target is greater than a threshold, theagent does not receive a range measurement and, therefore, is encouraged to search for the target
-# - Dropping factor of 10% to simulate the lack of communication/range measurements between the agent and the target.
+# - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
+# - Update observation space to include agent's position at the last measured distance
 #
 # In no particular order:
-# - Use their reward function
 # - Add moving target
 # - Add multiple agents
 # - Add 3D environment (depth)
+# - Get closer to the target than 300m
+# - Add a larger search space than 1km
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
@@ -56,8 +57,8 @@ if __name__ == "__main__":
     target_update_interval = 3000           # How often to update the target NN
     total_timesteps = int(5e6) #int(2e6)    # Total timesteps to train the agent
     env_params = {
-        "env_size": 707,                    # Width and length of the environment in meters; 1414 x 1414 = ~2km max distance
-        "target_radius": 25.0,              # Radius for "found" condition in meters
+        "env_size": 707,                    # Width and length of the environment in meters
+        "target_radius": 300.0,             # Radius for "found" condition in meters
         "max_step_size": 30.0,              # Maximum step size in meters
         "max_steps_per_episode": 200,       # Max steps per episode
         "dist_noise_std": 1,                # Standard deviation of Gaussian noise added to distance measurements (meters)
@@ -77,7 +78,7 @@ if __name__ == "__main__":
                 learning_starts=learning_starts, tau=tau, gamma=gamma,                   
                 train_freq=train_freq, gradient_steps=gradient_steps,             
                 learning_rate=learning_rate, target_update_interval=target_update_interval,
-                ent_coef="auto", seed = 3)
+                ent_coef="auto", seed=3)
     
     # Train agent
     model.learn(total_timesteps=total_timesteps, progress_bar=True)
