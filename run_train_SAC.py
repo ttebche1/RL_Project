@@ -1,6 +1,9 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
+# - Remove randomizing the target location
+# - Remove adding noise to distance measurements
+# - Reset reward function to -dist_to_target
 # - Update model to angle-based
 # - Add currents
 # - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
@@ -11,7 +14,7 @@
 # - Add multiple agents
 # - Add 3D environment (depth)
 # - Get closer to the target than 300m
-# - Add a larger search space than 1km
+# - Add a larger search space than 2km
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
@@ -45,7 +48,7 @@ def create_vec_env(num_envs, env_params):
 
 if __name__ == "__main__":
     # User parameters
-    num_envs = 128 #8                       # Number of parallel environments
+    num_envs = 12 #8                        # Number of parallel environments
     batch_size = 32                         # Number of samples used from the buffer per gradient update
     buffer_size = int(1e6)                  # Number of past experiences to store
     learning_starts = 10000                 # Number of exploration timesteps to collect before training starts
@@ -55,9 +58,9 @@ if __name__ == "__main__":
     gradient_steps = 5                      # How many gradient steps to take during each update
     learning_rate = 3e-4 #1e4               # How fast the NNs update
     target_update_interval = 3000           # How often to update the target NN
-    total_timesteps = int(5e6) #int(2e6)    # Total timesteps to train the agent
+    total_timesteps = int(2e6) #int(5e6)MEE    # Total timesteps to train the agent
     env_params = {
-        "env_size": 707,                    # Width and length of the environment in meters
+        "env_size": 1000.0,                 # Width and length of the environment in meters
         "target_radius": 300.0,             # Radius for "found" condition in meters
         "max_step_size": 30.0,              # Maximum step size in meters
         "max_steps_per_episode": 200,       # Max steps per episode
