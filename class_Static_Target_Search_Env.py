@@ -19,7 +19,6 @@ class static_target_search_env(gym.Env):
         # Width and length of square-shaped environment
         # 1414 x 1414 allows distance between agent and target to never exceed ~2km
         self._size = 1414.0
-        # NORMALIZE WRT THE GRID
 
         # Initialize agent location in top-left corner
         self._starting_location = np.array([0.0, self._size-1], dtype=np.float32)
