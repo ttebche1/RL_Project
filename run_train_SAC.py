@@ -1,7 +1,6 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# - Add random target locations
 # - Use their reward function
 # - Update model to angle-based
 #

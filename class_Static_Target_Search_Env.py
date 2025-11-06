@@ -23,10 +23,9 @@ class static_target_search_env(gym.Env):
 
         # Initialize agent and target locations, normalized
         self._starting_location = np.array([-1.0, 1.0], dtype=np.float32)   
-        self._agent_location = self._starting_location.copy()           # Top-left corner
+        self._agent_location = self._starting_location.copy()                                       # Top-left corner
         #self._last_measured_location = self._agent_location.copy()
-        #self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
-        self._target_location = np.array([1.0, -1.0], dtype=np.float32) # Bottom-right corner
+        self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
         self._last_dist_to_target = 2 * self._size
 
         # Initialize observation space: agent_x, agent_y, last measured distance to target, agent x at least measured distance, agent y at last measured distance
@@ -86,7 +85,7 @@ class static_target_search_env(gym.Env):
         # Initialize agent and target location
         self._agent_location = self._starting_location.copy()                                       # Top-left corner
         #self._last_measured_location = self._agent_location.copy()
-        #self._target_location = np.random.uniform(low=-1.0, high=1, size=(2,)).astype(np.float32)   # Random target location
+        self._target_location = np.random.uniform(low=-1.0, high=1, size=(2,)).astype(np.float32)   # Random target location
         self._last_dist_to_target = 2 * self._size
 
         # Initialize step count
