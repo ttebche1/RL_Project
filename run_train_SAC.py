@@ -1,21 +1,31 @@
 # Train SAC DRL model on the static target search environment
 
 # TO DO:
-# - Add random noise to distance measurements
 # - Add random target locations
 # - Use their reward function
-#
-# Once it's working again:
-# - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Update model to angle-based
-# - Add currents
 #
 # In no particular order:
-# - Add moving target
+# - Does adding the first derivative of distance to target help?
 # - Add multiple agents
-# - Add 3D environment (depth)
 # - Get closer to the target than 300m
 # - Add a larger search space than 2km
+# - Experiment with different comms approaches
+#
+# Stochasticity:
+# - Add the agent's location at the last measured location to the observation space
+# - Add particle filter for target estimation
+# - Add dropped comms
+# - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
+# - Add random noise to distance measurements
+# - Add currents
+#
+# Later:
+# - Add moving target
+# - Add baseline comparison
+# - Add trailing
+# - Add 3D environment (depth)
+# - Add complex comms things such as doppler
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
