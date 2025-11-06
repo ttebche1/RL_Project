@@ -23,15 +23,16 @@ class static_target_search_env(gym.Env):
 
         # Initialize agent and target locations, normalized
         self._starting_location = np.array([-1.0, 1.0], dtype=np.float32)   
-        self._agent_location = self._starting_location.copy()                                       # Top-left corner
+        self._agent_location = self._starting_location.copy()           # Top-left corner
+        self._last_measured_location = self._agent_location.copy()
         #self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
-        self._target_location = np.array([1.0, -1.0], dtype=np.float32)
+        self._target_location = np.array([1.0, -1.0], dtype=np.float32) # Bottom-right corner
         self._last_dist_to_target = 2 * self._size
 
-        # Initialize observation space: agent_x, agent_y, distance_to_target
+        # Initialize observation space: agent_x, agent_y, distance_to_target, agent x at least measured distance, agent y at last measured distance
         self.observation_space = spaces.Box(
-            low = np.array([-np.inf, -np.inf, 0.0], dtype=np.float32),
-            high = np.array([np.inf, np.inf, np.inf], dtype=np.float32),
+            low = np.array([-np.inf, -np.inf, 0.0, -np.inf, -np.inf], dtype=np.float32),
+            high = np.array([np.inf, np.inf, np.inf, np.inf, np.inf], dtype=np.float32),
             dtype = np.float32
         )
 
@@ -52,12 +53,14 @@ class static_target_search_env(gym.Env):
         Return agent's normalized location and distance to target
         
         Return:
-            observation (numpy array): [agent x, agent y, last measured distance to target]
+            observation (numpy array): [agent x, agent y, last measured distance to target, agent x at last measured distance, agent y at least measured distance]
         """
         return np.array([
             self._agent_location[0],
             self._agent_location[1],
-            self._last_dist_to_target],
+            self._last_dist_to_target,
+            self._last_measured_location[0],
+            self._last_measured_location[1]],
         dtype=np.float32)
     
     def _get_info(self):
@@ -80,6 +83,7 @@ class static_target_search_env(gym.Env):
 
         # Initialize agent and target location
         self._agent_location = self._starting_location.copy()                                       # Top-left corner
+        self._last_measured_location = self._agent_location.copy()
         #self._target_location = np.random.uniform(low=-1.0, high=1, size=(2,)).astype(np.float32)   # Random target location
         self._last_dist_to_target = 2 * self._size
 
@@ -117,13 +121,14 @@ class static_target_search_env(gym.Env):
         if np.random.rand() < 0.1:                              # 10% probability of lost measurement
         #    dist_to_target_noisy = self._last_dist_to_target    # Retain last distance
             dist_to_target = self._last_dist_to_target
-        #else:
+        else:
             #dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
             #dist_noise = np.random.normal(loc=0.01*dist_to_target, scale=self._dist_noise_std)
             #dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)    # Compute new distance with noise
             #self._last_dist_to_target = dist_to_target_noisy                # Update last distance
-        dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
-        self._last_dist_to_target = dist_to_target
+            dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
+            self._last_dist_to_target = dist_to_target
+            self._last_measured_location = self._agent_location.copy()
 
         # Terminal if within target radius
         #terminated = bool(dist_to_target_noisy <= self._target_radius)
@@ -139,7 +144,7 @@ class static_target_search_env(gym.Env):
         #reward = float(-dist_to_target_noisy + 0.1 * np.exp(-5 * dist_to_target_noisy)) 
         if terminated:
         #    reward = 1.0
-            reward += 10.0
+            reward += 5.0
         #else:
         #    reward = 0.01 * (0.5 - dist_to_target_noisy)
         #    if np.any(self._agent_location < -1.0) or np.any(self._agent_location > 1.0):
