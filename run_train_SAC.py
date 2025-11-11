@@ -1,26 +1,19 @@
 # Train SAC DRL model on the static target search environment
 #
-# TO-DO:
-# - Fix reward function
-# - Automatically tune the hyperparameters
-# - Curriculum training
-# - Does prompting it with a non-ML search algorithm help?
-# - Tweak SAC NNs
-#
-# Other sim updates to match theirs:
-# - Add particle filter for target estimation
-# - Update model to angle-based
+# Next: 
+# - Make it train faster
+# - Automatically tune hyperparameters to improve speed
 #
 # Class:
-# - Compare my reward functon to theirs
 # - Analyze improvement for my params compared to theirs
 # - Get closer to the target than 300m
 # - Add a larger search space than 2km
 # - Add multiple agents
 # - Experiment with different comms approaches
+# - Try curriculum training to improve speed
+# - Does prompting it with a non-ML search algorithm help?
 #
 # Stochasticity:
-# - Add the agent's location at the last measured location to the observation space
 # - Add dropped comms
 # - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Add random noise to distance measurements
@@ -32,6 +25,8 @@
 # - Add baseline comparison
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
+# - Add particle filter for target estimation
+# - Update model to angle-based
 
 from class_static_target_search_env import static_target_search_env 
 from stable_baselines3 import SAC
@@ -79,7 +74,7 @@ if __name__ == "__main__":
     gradient_steps = 1 #5              # How many gradient steps to take during each update
     learning_rate = 3e-4 #1e-4          # How fast the NNs update
     #target_update_interval = 500 #3000  # How often to update the target NN
-    total_timesteps = int(5e5)          # Total timesteps to train the agent
+    total_timesteps = int(2e6)          # Total timesteps to train the agent
     env_params = {
         "env_size": 1000.0,             # Distance from the origin in all four directions in meters
         "target_radius": 300.0,         # Radius for "found" condition in meters

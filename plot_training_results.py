@@ -55,7 +55,7 @@ def plot_training_results(df, reward_window, episode_window, success_window, max
     axes[2].plot(df['success_rate'], color='purple')
     axes[2].set_xlabel("Episode")
     axes[2].set_ylabel("Success Rate (%)")
-    axes[2].set_title(f"Success Rate")
+    axes[2].set_title(f"Smoothed Success Rate")
     axes[2].set_ylim(0, 100)
     axes[2].grid(True)
 
