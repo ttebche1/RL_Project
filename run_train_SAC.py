@@ -64,14 +64,14 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
 
     # User parameters
-    num_envs = 8 #32 #8                    # Number of parallel environments
-    batch_size = 128 #32                # Number of samples used from the buffer per gradient update
-    buffer_size = int(1e6)              # Number of past experiences to store
-    learning_starts = 10000 #40000 #10000      # Number of exploration timesteps to collect before training starts
+    num_envs = 16 #32 #8                    # Number of parallel environments
+    batch_size = 512 #32                # Number of samples used from the buffer per gradient update
+    buffer_size = 200000              # Number of past experiences to store
+    learning_starts = 5000 #40000 #10000      # Number of exploration timesteps to collect before training starts
     tau = 0.01                          # Target network update rate (slow updates)
     gamma = 0.99                        # Discount factor for future rewards (heavily considers future rewards)
-    train_freq = 1 #20                 # How often to update the NNs
-    gradient_steps = 1 #5              # How many gradient steps to take during each update
+    train_freq = 4 #20                 # How often to update the NNs
+    gradient_steps = 4 #5              # How many gradient steps to take during each update
     learning_rate = 3e-4 #1e-4          # How fast the NNs update
     #target_update_interval = 500 #3000  # How often to update the target NN
     total_timesteps = int(2e6)          # Total timesteps to train the agent
