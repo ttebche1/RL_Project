@@ -1,4 +1,4 @@
-from scipy.signal import savgol_filter
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -21,7 +21,7 @@ def load_training_log(csv_file):
 
     return df
 
-def plot_training_results(df, reward_window=50, episode_window=50):
+def plot_training_results(df, reward_window, episode_window, success_window, max_steps):
     """
     Plot training results for a single environment
 
@@ -29,6 +29,7 @@ def plot_training_results(df, reward_window=50, episode_window=50):
         df (pd.DataFrame): Dataframe containing training log
         reward_window (int): Window size for smoothing rewards
         episode_window (int): Window size for smoothing episode lengths
+        success_window (int): Window size for smoothing success rates
     """
     fig, axes = plt.subplots(3, 1, figsize=(12, 8))
 
@@ -48,12 +49,16 @@ def plot_training_results(df, reward_window=50, episode_window=50):
     axes[1].set_title(f"Smoothed Episode Length per Episode")
     axes[1].grid(True)
 
-    # 3. Reward over wall-clock time
-    axes[2].plot(df['t'], df['r'], color='red')
-    axes[2].set_xlabel("Time (s)")
-    axes[2].set_ylabel("Reward")
-    axes[2].set_title("Reward vs Time")
+    # 3. Success rate
+    df['success'] = (df['l'] < max_steps).astype(int)    
+    df['success_rate'] = df['success'].rolling(success_window).mean() * 100
+    axes[2].plot(df['success_rate'], color='purple')
+    axes[2].set_xlabel("Episode")
+    axes[2].set_ylabel("Success Rate (%)")
+    axes[2].set_title(f"Success Rate")
+    axes[2].set_ylim(0, 100)
     axes[2].grid(True)
+
 
     plt.tight_layout()
     plt.show()
@@ -64,9 +69,12 @@ if __name__ == "__main__":
     csv_file = "training.monitor.csv"
     reward_window = 75
     episode_window = 75
+    success_window = 75
 
-    # Load CSV
+    # Load data
     df = load_training_log(csv_file)
+    with open("env_params.json", "r") as f:
+        env_params = json.load(f)
 
     # Plot training results overlayed
-    plot_training_results(df, reward_window, episode_window)
+    plot_training_results(df, reward_window, episode_window, success_window, env_params["max_steps_per_episode"])

@@ -1,28 +1,35 @@
 # Train SAC DRL model on the static target search environment
-
-# TO DO:
-# - Use their reward function
+#
+# TO-DO:
+# - Fix reward function
+# - Automatically tune the hyperparameters
+# - Curriculum training
+# - Does prompting it with a non-ML search algorithm help?
+# - Tweak SAC NNs
+#
+# Other sim updates to match theirs:
+# - Add particle filter for target estimation
 # - Update model to angle-based
 #
-# In no particular order:
-# - Does adding the first derivative of distance to target help?
-# - Add multiple agents
+# Class:
+# - Compare my reward functon to theirs
+# - Analyze improvement for my params compared to theirs
 # - Get closer to the target than 300m
 # - Add a larger search space than 2km
+# - Add multiple agents
 # - Experiment with different comms approaches
 #
 # Stochasticity:
 # - Add the agent's location at the last measured location to the observation space
-# - Add particle filter for target estimation
 # - Add dropped comms
 # - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Add random noise to distance measurements
 # - Add currents
+# - Add moving target
 #
 # Later:
-# - Add moving target
+# - Add a moving target doing a predetermined walk w/ trailing
 # - Add baseline comparison
-# - Add trailing
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
 
@@ -31,6 +38,7 @@ from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 import json
+import time
 
 def create_vec_env(num_envs, env_params):
     """
@@ -57,49 +65,51 @@ def create_vec_env(num_envs, env_params):
     return DummyVecEnv(env_fns)
 
 if __name__ == "__main__":
+    # Record start time
+    start_time = time.perf_counter()
+
     # User parameters
-    num_envs = 32 #8                        # Number of parallel environments
-    batch_size = 32                         # Number of samples used from the buffer per gradient update
-    buffer_size = int(1e6)                  # Number of past experiences to store
-    learning_starts = 10000                 # Number of exploration timesteps to collect before training starts
-    tau = 0.01                              # Target network update rate (slow updates)
-    gamma = 0.99                            # Discount factor for future rewards (heavily considers future rewards)
-    train_freq = 20                         # How often to update the NNs
-    gradient_steps = 5                      # How many gradient steps to take during each update
-    learning_rate = 3e-4 #1e4               # How fast the NNs update
-    target_update_interval = 3000           # How often to update the target NN
-    total_timesteps = int(2e6)              # Total timesteps to train the agent
+    num_envs = 8 #32 #8                    # Number of parallel environments
+    batch_size = 128 #32                # Number of samples used from the buffer per gradient update
+    buffer_size = int(1e6)              # Number of past experiences to store
+    learning_starts = 10000 #40000 #10000      # Number of exploration timesteps to collect before training starts
+    tau = 0.01                          # Target network update rate (slow updates)
+    gamma = 0.99                        # Discount factor for future rewards (heavily considers future rewards)
+    train_freq = 1 #20                 # How often to update the NNs
+    gradient_steps = 1 #5              # How many gradient steps to take during each update
+    learning_rate = 3e-4 #1e-4          # How fast the NNs update
+    #target_update_interval = 500 #3000  # How often to update the target NN
+    total_timesteps = int(5e5)          # Total timesteps to train the agent
     env_params = {
-        "env_size": 1000.0,                 # Distance from the origin in all four directions in meters
-        "target_radius": 300.0,             # Radius for "found" condition in meters
-        "max_step_size": 30.0,              # Maximum step size in meters
-        "max_steps_per_episode": 200,       # Max steps per episode
-        "dist_noise_std": 1,                # Standard deviation of Gaussian noise added to distance measurements in meters
+        "env_size": 1000.0,             # Distance from the origin in all four directions in meters
+        "target_radius": 300.0,         # Radius for "found" condition in meters
+        "max_step_size": 30.0,          # Maximum step size in meters
+        "max_steps_per_episode": 200,   # Max steps per episode
+        "dist_noise_std": 1,            # Standard deviation of Gaussian noise added to distance measurements in meters
     }
 
     # Create vectorized environments with training result logs
     vec_env = create_vec_env(num_envs=num_envs, env_params=env_params)
 
-    # Initialize SAC agent
-    # "MlpPolicy" = fully-connected neural network
-    # verbose: 0=no output, 1=minimal info, 2=debug info
-    # device: "cuda"=GPU, "cpu"=CPU
-    # ent_coef="auto": automatically adjust weight of entropy in the loss function
-    # seed: set random seed for reproducibility
-    model = SAC("MlpPolicy", vec_env, verbose=0,
+    model = SAC("MlpPolicy", vec_env, verbose=1,
                 device="cuda", batch_size=batch_size, buffer_size=buffer_size,         
                 learning_starts=learning_starts, tau=tau, gamma=gamma,                   
                 train_freq=train_freq, gradient_steps=gradient_steps,             
-                learning_rate=learning_rate, target_update_interval=target_update_interval,
-                ent_coef="auto", seed=3)
+                learning_rate=learning_rate, #target_update_interval=target_update_interval,
+                ent_coef="auto", seed=None)
     
     # Train agent
     model.learn(total_timesteps=total_timesteps, progress_bar=True)
 
     # Save trained model and environmental parameters
     model.save("sac_static_target_search")
+
     with open("env_params.json", "w") as f:
         json.dump(env_params, f)
 
     # Close environments
     vec_env.close()
+
+    # Display end time
+    end_time = time.perf_counter()
+    print(f"Runtime: {end_time - start_time:.4f} seconds")
