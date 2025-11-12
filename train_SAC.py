@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # Save trained model and environmental parameters
     model.save("sac_static_target_search")
 
-    with open("env_params.json", "w") as f:
+    with open("sac_env_params.json", "w") as f:
         json.dump(env_params, f)
 
     # Close environments
