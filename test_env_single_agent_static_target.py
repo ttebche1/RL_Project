@@ -1,6 +1,6 @@
 # Test script for the graphics of the static target search environment
 
-from class_single_agent_static_target_search_env import single_agent_static_target_search_env
+from class_single_agent_static_target_search_env import SingleAgentStaticTargetSearchEnv as gym_env
 
 if __name__ == "__main__":
     # Initialize environment
@@ -12,7 +12,7 @@ if __name__ == "__main__":
         "dist_noise_std": 0.5,          # Standard deviation of Gaussian noise added to distance measurements (meters)
         "dist_noise_bias": 0.0          # Constant bias added to distance measurements (meters)
     }
-    env = single_agent_static_target_search_env(env_params, render_mode="human")
+    env = gym_env(env_params, render_mode="human")
     obs, info = env.reset()
     done = False
     truncated = False
