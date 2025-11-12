@@ -5,7 +5,7 @@ import gymnasium as gym
 import numpy as np
 import pygame
 
-class single_agent_static_target_search_env(gym.Env):
+class SingleAgentStaticTargetSearchEnv(gym.Env):
     def __init__(self, env_params, render_mode=None):
         """
         Initialize environment
