@@ -13,7 +13,7 @@
 # - Automatically tune hyperparameters
 #
 # Stochasticity:
-# - Add currents; must improve observability
+# - Add currents; must improve observability (LSTM)
 # - Add particle filter for target estimation; add moving target w/ trailing
 #
 # Later:
@@ -23,7 +23,7 @@
 # - Add complex comms things such as doppler
 # - Turn it into a whale problem!
 
-from class_static_target_search_env import static_target_search_env 
+from class_single_agent_static_target_search_env import single_agent_static_target_search_env 
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -42,7 +42,7 @@ def create_vec_env(num_envs, env_params):
     """
     def make_env(i):
         def _init():
-            env = static_target_search_env(env_params)
+            env = single_agent_static_target_search_env(env_params)
             if i == 0:
                 # Only log first environment directly to a CSV in the current directory
                 return Monitor(env, filename=f"training")

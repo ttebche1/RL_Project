@@ -1,6 +1,6 @@
 # Test script for the parameters of the static target search environment
 
-from class_static_target_search_env import static_target_search_env
+from class_single_agent_static_target_search_env import single_agent_static_target_search_env
 from stable_baselines3.common.env_checker import check_env
 
 if __name__ == "__main__":
@@ -13,7 +13,7 @@ if __name__ == "__main__":
         "dist_noise_std": 0.5,          # Standard deviation of Gaussian noise added to distance measurements (meters)
         "dist_noise_bias": 0.0          # Constant bias added to distance measurements (meters)
     }
-    env = static_target_search_env(env_params)
+    env = single_agent_static_target_search_env(env_params)
 
     # Check environment
     check_env(env)
