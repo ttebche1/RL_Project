@@ -1,6 +1,6 @@
 # Train SAC DRL model on the static target search environment
 
-from class_single_agent_static_target_search_env import single_agent_static_target_search_env 
+from class_single_agent_static_target_search_env import SingleAgentStaticTargetSearchEnv as gym_env
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -19,7 +19,7 @@ def create_vec_env(num_envs, env_params):
     """
     def make_env(i):
         def _init():
-            env = single_agent_static_target_search_env(env_params)
+            env = gym_env(env_params)
             if i == 0:
                 # Only log first environment directly to a CSV in the current directory
                 return Monitor(env, filename=f"training")
@@ -36,17 +36,16 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
 
     # User parameters
-    num_envs = 16 #32       # Number of parallel environments
-    batch_size = 512        # Number of samples used from the buffer per gradient update
-    buffer_size = 200000    # Number of past experiences to store
-    learning_starts = 5000  # Number of exploration timesteps to collect before training starts
-    tau = 0.01              # Target network update rate (slow updates)
-    gamma = 0.99            # Discount factor for future rewards (heavily considers future rewards)
-    train_freq = 4 #20      # How often to update the NNs
-    gradient_steps = 4 #5   # How many gradient steps to take during each update
-    learning_rate = 3e-4 #1e-4 # How fast the NNs update
-    #target_update_interval = 500 #3000 # How often to update the target NN
-    total_timesteps = int(2e6) #int(1.5e6) # Total timesteps to train the agent
+    num_envs = 16               # Number of parallel environments
+    batch_size = 512            # Number of samples used from the buffer per gradient update
+    buffer_size = 200000        # Number of past experiences to store
+    learning_starts = 5000      # Number of exploration timesteps to collect before training starts
+    tau = 0.01                  # Target network update rate (slow updates)
+    gamma = 0.99                # Discount factor for future rewards (heavily considers future rewards)
+    train_freq = 4              # How often to update the NNs
+    gradient_steps = 4          # How many gradient steps to take during each update
+    learning_rate = 3e-4        # How fast the NNs update
+    total_timesteps = int(2e6)  # Total timesteps to train the agent
     env_params = {
         "env_size": 1000.0,             # Distance from the origin in all four directions in meters
         "target_radius": 300.0,         # Radius for "found" condition in meters

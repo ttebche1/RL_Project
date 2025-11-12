@@ -1,6 +1,6 @@
 # Test trained SAC model on Static Target Search Environment
 
-from class_single_agent_static_target_search_env import single_agent_static_target_search_env
+from class_single_agent_static_target_search_env import SingleAgentStaticTargetSearchEnv as gym_env
 from stable_baselines3 import SAC
 import json
 
@@ -11,7 +11,7 @@ if __name__ == "__main__":
         env_params = json.load(f)
 
     # Create environment with visual rendering
-    env = single_agent_static_target_search_env(env_params, render_mode="human")
+    env = gym_env(env_params, render_mode="human")
     obs, info = env.reset()
 
     # Run one episode

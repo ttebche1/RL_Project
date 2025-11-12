@@ -17,29 +17,20 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Set random seed
         np.random.seed(None)
 
-        # Set given parameters
+        # Initialize parameters
         self._size = env_params["env_size"]                                 # Distance from origin in all four directions                             
         self._target_radius = env_params["target_radius"] / self._size      # Radius for "found" condition, normalized
         self._max_step_size = env_params["max_step_size"] / self._size      # Maximum step size in meters, normalized
         self._max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
         self._dist_noise_std = env_params["dist_noise_std"] / self._size    # Standard deviation of Gaussian noise added to distance measurements, normalized      
-
-        # Initialize agent and target locations, normalized
-        self._starting_location = np.array([0.0, 0.0], dtype=np.float32)   
-        self._agent_location = self._starting_location.copy()                                       # Center
-        self._prev_agent_location = self._starting_location.copy()
-        self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
-        self._dist_to_target = np.linalg.norm(self._agent_location - self._target_location)
-        self._dist_to_target += np.random.normal(0.01 * self._dist_to_target, self._dist_noise_std) # Add noise to distance measurement
-        self._dist_to_target = max(0.0, self._dist_to_target)
-        self._dist_change = 0.0
+        self._starting_location = np.array([0.0, 0.0], dtype=np.float32)    # Agent starting location
 
         # Initialize observation space: 
-        # agent_x 
-        # agent_y 
+        # agent's x coordinate
+        # agent's y coordinate 
         # distance to target
-        # agent x at least measured distance
-        # agent y at last measured distance
+        # agent's x coordinate at least measured distance
+        # agent's y coordinate at last measured distance
         # change in distance to target since last measurement
         self.observation_space = spaces.Box(
             low = np.array([-1.0, -1.0, 0.0, -1.0, -1.0, -self._max_step_size], dtype=np.float32),
@@ -50,21 +41,27 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Initialize action space: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
-        # Initialize number of steps taken in current episode
-        self._step_count = 0
-
         # Set render mode
         self.render_mode = render_mode  
         self._window_size = 512  
         self._window = None
-        self._clock = None     
+        self._clock = None    
+
+        # Reset environment
+        self.reset() 
     
     def _get_obs(self):
         """
-        Return agent's normalized location, distance to target, previous location, and change in distance
+        Return agent's observation
         
         Return:
-            observation (numpy array): [agent x, agent y, last measured distance to target, agent x at last measured distance, agent y at least measured distance]
+            observation (numpy array):
+                agent's x coordinate
+                agent's y coordiante
+                distance to target
+                agent's x coordinate at previous distance
+                agent's y at previous distance
+                change in distance
         """
         return np.array([
             self._agent_location[0],
@@ -93,13 +90,13 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Set the seed of the reset function in gym.Env (parent class)
         super().reset(seed=seed)
 
-        # Initialize agent and target locations, normalized
+        # Initialize locations
         self._agent_location = self._starting_location.copy()                                       # Center
         self._prev_agent_location = self._starting_location.copy()
         self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
-        self._dist_to_target = np.linalg.norm(self._agent_location - self._target_location)
-        self._dist_to_target += np.random.normal(0.01 * self._dist_to_target, self._dist_noise_std) # Add noise to distance measurement
-        self._dist_to_target = max(0.0, self._dist_to_target)
+
+        # Initialize distances
+        self._dist_to_target = self._compute_dist_to_target()
         self._dist_change = 0.0
 
         # Initialize step count
@@ -143,9 +140,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
             # Update distance to target
             prev_dist_to_target = self._dist_to_target.copy()
-            self._dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
-            self._dist_to_target += np.random.normal(0.01 * self._dist_to_target, self._dist_noise_std) # Add noise to distance measurement
-            self._dist_to_target = max(0.0, self._dist_to_target)
+            self._dist_to_target = self._compute_dist_to_target()
             self._dist_change = prev_dist_to_target - self._dist_to_target
 
             # Terminal if within target radius
@@ -162,21 +157,24 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self._step_count += 1
         truncated = self._step_count >= self._max_steps_per_episode
 
-        # Get distance to target
-        #if np.random.rand() < 0.1:                              # 10% probability of lost measurement
-        #    dist_to_target_noisy = self._last_dist_to_target    # Retain last distance
-        #    dist_to_target = self._last_dist_to_target
-        #else:
-            #dist_to_target = np.linalg.norm(self._agent_location-self._target_location)
-            #dist_noise = np.random.normal(loc=0.01*dist_to_target, scale=self._dist_noise_std)
-            #dist_to_target_noisy = max(0.0, dist_to_target + dist_noise)    # Compute new distance with noise
-            #self._last_dist_to_target = dist_to_target_noisy                # Update last distance
-
         # Re-render environment if in human render mode
         if self.render_mode == "human":
             self._render_frame()
 
         return self._get_obs(), reward, terminated, truncated, self._get_info()
+    
+    def _compute_dist_to_target(self):
+        """
+        Computes distance from agent to target
+
+        Return:
+            dist_to_target (float): distance from agent to target, normalized
+        """
+        dist_to_target = np.linalg.norm(self._agent_location - self._target_location)   # Compute distance
+        dist_to_target += np.random.normal(0.01 * dist_to_target, self._dist_noise_std) # Add noise
+        dist_to_target = max(0.0, dist_to_target)                                       # Remove negative distances
+
+        return dist_to_target
     
     def _env_to_screen(self, location):
         """
