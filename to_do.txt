@@ -1,4 +1,6 @@
 # Multi-agents:
+# - Convert single agent model to ray
+# - Add multiple agents
 # - Remove full observability, but they know each other's distance to target
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Try no comms
@@ -19,3 +21,4 @@
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
 # - Turn it into a whale problem!
+# - Try different multi-RL algorithms
