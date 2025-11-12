@@ -1,5 +1,8 @@
+# Single agent updates:
+# - Convert to ray
+# - Add currents (1/3 of vehicle velocity) with LSTM model
+#
 # Multi-agents:
-# - Convert single agent model to ray
 # - Add multiple agents
 # - Remove full observability, but they know each other's distance to target
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
@@ -12,8 +15,8 @@
 # - Automatically tune hyperparameters
 #
 # Stochasticity:
-# - Add currents; must improve observability (LSTM)
-# - Add particle filter for target estimation; add moving target w/ trailing
+# - Add particle filter for target estimation
+# - Add moving target w/ trailing
 #
 # Later:
 # - Update model to angle-based
