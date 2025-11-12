@@ -1,8 +1,11 @@
 # Train SAC DRL model on the static target search environment
 #
-# Class:
-# - Add multiple agents
-# - Experiment with different comms approaches
+# Multi-agents:
+# - Add multiple agents w/ full observability
+# - Remove full observability, but they know each other's distance to target
+# - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
+# - Try no comms
+# - Add a larger search space than 2km
 #
 # Speed:
 # - Does prompting it with a non-ML search algorithm help?
@@ -10,18 +13,14 @@
 # - Automatically tune hyperparameters
 #
 # Stochasticity:
-# - Add dropped comms
-# - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
-# - Update model to angle-based
-# - Add currents
-# - Add moving target w/ trailing
+# - Add currents; must improve observability
+# - Add particle filter for target estimation; add moving target w/ trailing
 #
 # Later:
-# - Add a larger search space than 2km
+# - Update model to angle-based
 # - Add baseline comparison
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
-# - Add particle filter for target estimation
 # - Turn it into a whale problem!
 
 from class_static_target_search_env import static_target_search_env 
