@@ -14,7 +14,7 @@
 # - Curriculum training 
 # - Automatically tune hyperparameters
 #
-# Stochasticity:
+# Moving target:
 # - Add particle filter for target estimation
 # - Add moving target w/ trailing
 #
