@@ -1,4 +1,5 @@
 # Single-agent updates:
+# - Make it 1/2 of the agent's velocity
 # - Add current to location even if the agent doesn't move
 # - Make the agent move at constant velocity
 # - Update observations to be velocity/acceleration error if that makes sense
