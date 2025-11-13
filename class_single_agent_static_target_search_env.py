@@ -113,6 +113,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self._dist_to_target = self._compute_dist_to_target()
         self._dist_change = 0.0
 
+        # Initialize current
+        self._current = (np.random.uniform(-1/3, 1/3, size=(2,)).astype(np.float32)) * self._max_step_size
+
         # Initialize velocity and acceleration
         self._velocity = np.array([0.0, 0.0], dtype=np.float32) 
         self._prev_velocity = np.array([0.0, 0.0], dtype=np.float32) 
@@ -146,7 +149,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
         # Compute new location
-        new_location = self._agent_location + action * self._max_step_size
+        new_location = self._agent_location + action * self._max_step_size + self._current
 
         # Check if new location is in bounds
         if np.any(new_location < -1.0) or np.any(new_location > 1.0):

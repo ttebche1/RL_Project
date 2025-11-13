@@ -1,27 +1,33 @@
-# Single agent updates:
-# - Convert to ray
-# - Add currents (1/3 of vehicle velocity) with LSTM model
+# Single-agent updates:
+# - Add current to location even if the agent doesn't move
+# - Make the agent move at constant velocity
+# - Update observations to be velocity/acceleration error if that makes sense
+# - Update model to angle-based
+# - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
+# - Fix overshoot at the beginning
+#
+# Moving target:
+# - Add particle filter for target estimation
+# - Add moving target w/ trailing
+#
+# Class:
+# - Compare how much faster training is with the velocity/acceleration components in the observation space
 #
 # Multi-agents:
+# - Convert to ray
 # - Add multiple agents
 # - Remove full observability, but they know each other's distance to target
-# - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Try no comms
 # - Add a larger search space than 2km
+# - Try different multi-RL algorithms
 #
 # Speed:
 # - Does prompting it with a non-ML search algorithm help?
 # - Curriculum training 
 # - Automatically tune hyperparameters
 #
-# Moving target:
-# - Add particle filter for target estimation
-# - Add moving target w/ trailing
-#
 # Later:
-# - Update model to angle-based
 # - Add baseline comparison
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
 # - Turn it into a whale problem!
-# - Try different multi-RL algorithms
