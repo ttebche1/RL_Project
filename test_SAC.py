@@ -7,7 +7,7 @@ import json
 if __name__ == "__main__":
     # Load trained model and environmental parameters
     model = SAC.load("sac_static_target_search")
-    with open("env_params.json", "r") as f:
+    with open("sac_env_params.json", "r") as f:
         env_params = json.load(f)
 
     # Create environment with visual rendering

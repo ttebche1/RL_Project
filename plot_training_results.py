@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # Load data
     df = load_training_log(csv_file)
-    with open("env_params.json", "r") as f:
+    with open("sac_env_params.json", "r") as f:
         env_params = json.load(f)
 
     # Plot training results overlayed
