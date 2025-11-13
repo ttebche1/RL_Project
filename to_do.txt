@@ -6,6 +6,7 @@
 # - Update model to angle-based
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - Fix overshoot at the beginning
+# - Have it learn the real-time currents in real-time
 #
 # Moving target:
 # - Add particle filter for target estimation
