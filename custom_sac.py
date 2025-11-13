@@ -127,10 +127,6 @@ if __name__ == "__main__":
                 critic_losses.append(critic_loss)
                 actor_losses.append(actor_loss)
                 update_step += 1
-                
-                # Update target network (like SB3)
-                if update_step % target_update_interval == 0:
-                    agent.update(batch)
 
             # Update progress bar with smoothed statistics
             if len(ep_rewards_history) > 0:
