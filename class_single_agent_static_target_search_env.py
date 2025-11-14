@@ -39,10 +39,10 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's x acceleration
         # agent's y acceleration
         self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, 
-                            -self._max_step_size, -self._max_step_size, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0,
-                             self._max_step_size, self._max_step_size, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
+            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size], dtype=np.float32),
+                            #, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
+            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self._max_step_size, self._max_step_size], dtype=np.float32),
+                             #, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
             dtype = np.float32
         )
 
@@ -88,9 +88,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self._prev_agent_location[0],
             self._prev_agent_location[1],
             self._velocity[0],
-            self._velocity[1],
-            self._acceleration[0],
-            self._acceleration[1]],
+            self._velocity[1]],
+            #self._acceleration[0],
+            #self._acceleration[1]],
         dtype=np.float32)
     
     def _get_info(self):
@@ -125,8 +125,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
         # Initialize velocity and acceleration
         self._velocity = np.array([0.0, 0.0], dtype=np.float32) 
-        self._prev_velocity = np.array([0.0, 0.0], dtype=np.float32) 
-        self._acceleration = np.array([0.0, 0.0], dtype=np.float32)   
+        #self._prev_velocity = np.array([0.0, 0.0], dtype=np.float32) 
+        #self._acceleration = np.array([0.0, 0.0], dtype=np.float32)   
 
         # Initialize step count
         self._step_count = 0
@@ -172,9 +172,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self._dist_to_target_vec = self._agent_location - self._target_location
 
             # Update velocity and acceleration
-            self._prev_velocity = self._velocity.copy()
+            #self._prev_velocity = self._velocity.copy()
             self._velocity = self._agent_location - self._prev_agent_location
-            self._acceleration = self._velocity - self._prev_velocity
+            #self._acceleration = self._velocity - self._prev_velocity
 
             # Terminal if within target radius
             terminated = bool(self._dist_to_target <= self._target_radius)
