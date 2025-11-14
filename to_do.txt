@@ -8,7 +8,7 @@
 #
 # Analyses:
 # - Added estimator for agent position and corrected observation space
-# - Adding change in acceleration estimate to the observation space makes training better
+# - Adding change in acceleration estimate to the observation space and stacked observations makes training better
 # - Different parameters and reward - theirs don't even train
 #
 # Later:
