@@ -15,6 +15,7 @@
 # - Add complex comms things such as doppler
 # - Turn it into a whale problem!
 # - Add a more complex current model
+# - Minimize power expended rather than distance
 #
 # Multi-agents:
 # - Add multiple agents
