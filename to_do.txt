@@ -1,5 +1,4 @@
 # Class:
-# - Remove unnecessary things in the observation space (and stacking)
 # - Add particle filter for target estimation
 # - Make the agent move at constant velocity
 # - Update model to angle-based
@@ -9,7 +8,7 @@
 #
 # Analyses:
 # - Added estimator for agent position and corrected observation space
-# - Adding change in distance and acceleration estimate to the observation space makes training faster?
+# - Adding change in acceleration estimate to the observation space makes training better
 # - Different parameters and reward - theirs don't even train
 #
 # Later:
