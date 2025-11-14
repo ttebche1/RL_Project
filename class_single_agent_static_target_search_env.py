@@ -209,6 +209,60 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         x_pix = int(x_scaled * self._window_size)
         y_pix = int((1.0 - y_scaled) * self._window_size)  # flip y for pygame
         return np.array([x_pix, y_pix])
+    
+    def draw_current_arrows(self, surface):
+        """
+        Draw a background of arrows representing the current on the Pygame surface.
+        """
+        current_scale = 3.0
+        grid_size = 10
+        color = (200, 200, 200)
+
+        x = np.linspace(-1, 1, grid_size)
+        y = np.linspace(-1, 1, grid_size)
+        
+        for gx in x:
+            for gy in y:
+                point = np.array([gx, gy])
+                screen_point = self._env_to_screen(point)
+
+                # Arrow vector scaled to pixels - apply additional scaling for visibility
+                pixels_per_unit = self._window_size / 2
+                arrow_vec = self._current * current_scale * pixels_per_unit
+
+                # Minimum arrow length to ensure visibility
+                min_arrow_length = 15  # pixels
+                arrow_length = np.linalg.norm(arrow_vec)
+                if 0 < arrow_length < min_arrow_length:
+                    arrow_vec = arrow_vec / arrow_length * min_arrow_length
+
+                # Note: subtract arrow_vec[1] because screen y is flipped
+                end_point = (screen_point[0] + arrow_vec[0], screen_point[1] - arrow_vec[1])
+
+                # Only draw arrow if it has meaningful length
+                if np.linalg.norm(arrow_vec) > 2:
+                    # Draw arrow line - make it thicker
+                    pygame.draw.line(surface, color, screen_point, end_point, 3)
+
+                    # Draw arrowhead
+                    dx = end_point[0] - screen_point[0]
+                    dy = end_point[1] - screen_point[1]
+                    angle = np.arctan2(dy, dx)
+                    
+                    head_length = 8  # Larger head for better visibility
+                    head_angle = np.pi / 6  # 30 degrees
+                    
+                    # Calculate arrowhead points
+                    left = (
+                        end_point[0] - head_length * np.cos(angle - head_angle),
+                        end_point[1] - head_length * np.sin(angle - head_angle)
+                    )
+                    right = (
+                        end_point[0] - head_length * np.cos(angle + head_angle),
+                        end_point[1] - head_length * np.sin(angle + head_angle)
+                    )
+                    
+                    pygame.draw.polygon(surface, color, [end_point, left, right])
 
     def _render_frame(self):
         """Render the next frame"""
@@ -230,6 +284,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Convert coordinates (flip y)
         target_center = tuple(self._env_to_screen(self._target_location))
         agent_center = tuple(self._env_to_screen(self._agent_location))
+
+        # Draw current
+        self.draw_current_arrows(canvas)
        
         # Draw agent and target with a minimum visible radius
         circle_radius = max(8, int(self._window_size * 0.015))  # slightly larger
