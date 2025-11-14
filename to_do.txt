@@ -1,10 +1,16 @@
 # Class:
+# - Normalize observation space
+# - Remove unnecessary things in the observation space (and stacking)
 # - Add particle filter for target estimation
 # - Make the agent move at constant velocity
-# - Update observations to be velocity/acceleration error if that makes sense
 # - Update model to angle-based
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - At the end, make it 1/2 of the agent's velocity
+#
+# Analyses:
+# - Added estimator for agent position and corrected observation space
+# - Adding change in distance and acceleration estimate to the observation space makes training faster?
+# - Different parameters and reward - theirs don't even train
 #
 # Later:
 # - Add moving target w/ trailing
