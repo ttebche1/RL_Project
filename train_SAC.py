@@ -1,7 +1,6 @@
 # Train SAC DRL model on the static target search environment
 
 from class_single_agent_static_target_search_env import SingleAgentStaticTargetSearchEnv as gym_env
-from gymnasium.wrappers import FrameStackObservation
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -21,7 +20,6 @@ def create_vec_env(num_envs, env_params):
     def make_env(i):
         def _init():
             env = gym_env(env_params)
-            env = FrameStackObservation(env, stack_size=4)
             if i == 0:
                 # Only log first environment directly to a CSV in the current directory
                 return Monitor(env, filename=f"training")

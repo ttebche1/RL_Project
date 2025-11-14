@@ -1,7 +1,6 @@
 # Test trained SAC model on Static Target Search Environment
 
 from class_single_agent_static_target_search_env import SingleAgentStaticTargetSearchEnv as gym_env
-from gymnasium.wrappers import FrameStackObservation
 from stable_baselines3 import SAC
 import json
 
@@ -13,7 +12,6 @@ if __name__ == "__main__":
 
     # Create environment with visual rendering
     env = gym_env(env_params, render_mode="human")
-    env = FrameStackObservation(env, stack_size=4)
     obs, info = env.reset()
 
     # Run one episode

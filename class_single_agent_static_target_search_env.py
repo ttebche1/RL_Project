@@ -1,6 +1,5 @@
 # Class for environment that enables an agent to search for a static target
 
-from collections import deque
 from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
@@ -41,10 +40,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self._max_step_size, self._max_step_size], dtype=np.float32),
             dtype = np.float32
         )
-
-        # Initialize a stacked buffer
-        self.stack_size = 4
-        self.obs_buffer = deque(maxlen=self.stack_size)
 
         # Initialize action space: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)

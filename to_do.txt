@@ -8,7 +8,6 @@
 #
 # Analyses:
 # - Added estimator for agent position and corrected observation space
-# - Adding stacked observations makes training better
 # - Different parameters and reward - theirs don't even train
 #
 # Later:
