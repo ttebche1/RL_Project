@@ -6,7 +6,7 @@ import numpy as np
 import pygame
 
 class SingleAgentStaticTargetSearchEnv(gym.Env):
-    def __init__(self, env_params, render_mode=None):
+    def __init__(self, **kwargs):
         """
         Initialize environment
 
@@ -18,12 +18,12 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         np.random.seed(None)
 
         # Initialize parameters
-        self._size = env_params["env_size"]                                 # Distance from origin in all four directions                             
-        self._target_radius = env_params["target_radius"] / self._size      # Radius for "found" condition, normalized
-        self._max_step_size = env_params["max_step_size"] / self._size      # Maximum step size in meters, normalized
-        self._max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
-        self._dist_noise_std = env_params["dist_noise_std"] / self._size    # Standard deviation of Gaussian noise added to distance measurements, normalized      
-        self._starting_location = np.array([0.0, 0.0], dtype=np.float32)    # Agent starting location
+        self.env_size = kwargs.get("env_size")                                  # Distance from origin in all four directions                                   
+        self.target_radius = kwargs.get("target_radius") / self.env_size        # Radius for "found" condition, normalized
+        self.max_step_size = kwargs.get("max_step_size") / self.env_size        # Max step size in meters, normalized
+        self.max_steps_per_episode = kwargs.get("max_steps_per_episode", 200)   # Max steps per episode
+        self.dist_noise_std = kwargs.get("dist_noise_std", 1) / self.env_size   # Standard deviation of Gaussian noise added to distance measurements, normalized  
+        self.starting_location = np.array([0.0, 0.0], dtype=np.float32)         # Agent starting location
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -37,10 +37,10 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's x acceleration
         # agent's y acceleration
         self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size, 
-                            -self._max_step_size, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 1.0, 1.0, self._max_step_size, self._max_step_size, 
-                             self._max_step_size, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
+            low = np.array([-1.0, -1.0, 0.0, -1.0, -1.0, -self.max_step_size, -self.max_step_size, 
+                            -self.max_step_size, -2*self.max_step_size, -2*self.max_step_size], dtype=np.float32),
+            high = np.array([1.0, 1.0, 2.83, 1.0, 1.0, self.max_step_size, self.max_step_size, 
+                             self.max_step_size, 2*self.max_step_size, 2*self.max_step_size], dtype=np.float32),
             dtype = np.float32
         )
 
@@ -48,15 +48,15 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
         # Set render mode
-        self.render_mode = render_mode  
-        self._window_size = 512  
-        self._window = None
-        self._clock = None    
+        self.render_mode = kwargs.get("render_mode")   
+        self.window_size = 512  
+        self.window = None
+        self.clock = None    
 
         # Reset environment
         self.reset() 
     
-    def _get_obs(self):
+    def get_obs(self):
         """
         Return agent's observation
         
@@ -74,20 +74,23 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
                 agent's y acceleration
         """
         return np.array([
-            self._agent_location[0],
-            self._agent_location[1],
-            self._dist_to_target,
-            self._prev_agent_location[0],
-            self._prev_agent_location[1],
-            self._dist_change,
-            self._velocity[0],
-            self._velocity[1],
-            self._acceleration[0],
-            self._acceleration[1]],
+            self.agent_location[0],
+            self.agent_location[1],
+            self.dist_to_target,
+            self.prev_agent_location[0],
+            self.prev_agent_location[1],
+            self.dist_change,
+            self.velocity[0],
+            self.velocity[1],
+            self.acceleration[0],
+            self.acceleration[1]],
         dtype=np.float32)
     
-    def _get_info(self):
-        return {}
+    def get_info(self):
+        info = {}
+        if self.step_count >= self.max_steps_per_episode:
+            info["final_observation"] = self.get_obs()
+        return info
 
     def reset(self, *, seed=None, options=None):
         """
@@ -105,31 +108,31 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         super().reset(seed=seed)
 
         # Initialize locations
-        self._agent_location = self._starting_location.copy()                                       # Center
-        self._prev_agent_location = self._starting_location.copy()
-        self._target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
+        self.agent_location = self.starting_location.copy()                                       # Center
+        self.prev_agent_location = self.starting_location.copy()
+        self.target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
 
         # Initialize distances
-        self._dist_to_target = self._compute_dist_to_target()
-        self._dist_change = 0.0
+        self.dist_to_target = self.compute_dist_to_target()
+        self.dist_change = 0.0
 
         # Initialize current
-        self._current = (np.random.uniform(-1/3, 1/3, size=(2,)).astype(np.float32)) * self._max_step_size
+        self.current = (np.random.uniform(-1/3, 1/3, size=(2,)).astype(np.float32)) * self.max_step_size
 
         # Initialize velocity and acceleration
-        self._velocity = np.array([0.0, 0.0], dtype=np.float32) 
-        self._prev_velocity = np.array([0.0, 0.0], dtype=np.float32) 
-        self._acceleration = np.array([0.0, 0.0], dtype=np.float32)   
+        self.velocity = np.array([0.0, 0.0], dtype=np.float32) 
+        self.prev_velocity = np.array([0.0, 0.0], dtype=np.float32) 
+        self.acceleration = np.array([0.0, 0.0], dtype=np.float32)   
 
         # Initialize step count
-        self._step_count = 0
+        self.step_count = 0
 
         # Re-render environment if in human render mode
         if self.render_mode == "human":
-            self._render_frame()
+            self.render_frame()
 
         # Return observation and information
-        return self._get_obs(), self._get_info()
+        return self.get_obs(), self.get_info()
     
     def step(self, action: np.ndarray):
         """
@@ -149,7 +152,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
         # Compute new location
-        new_location = self._agent_location + action * self._max_step_size + self._current
+        new_location = self.agent_location + action * self.max_step_size + self.current
 
         # Check if new location is in bounds
         if np.any(new_location < -1.0) or np.any(new_location > 1.0):
@@ -157,52 +160,52 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             terminated = False
         else:
             # If in bounds, move agent
-            self._prev_agent_location = self._agent_location.copy()
-            self._agent_location = new_location.copy()
+            self.prev_agent_location = self.agent_location.copy()
+            self.agent_location = new_location.copy()
 
             # Update distance to target
-            prev_dist_to_target = self._dist_to_target.copy()
-            self._dist_to_target = self._compute_dist_to_target()
-            self._dist_change = prev_dist_to_target - self._dist_to_target
+            prev_dist_to_target = self.dist_to_target.copy()
+            self.dist_to_target = self.compute_dist_to_target()
+            self.dist_change = prev_dist_to_target - self.dist_to_target
 
             # Update velocity and acceleration
-            self._prev_velocity = self._velocity.copy()
-            self._velocity = self._agent_location - self._prev_agent_location
-            self._acceleration = self._velocity - self._prev_velocity
+            self.prev_velocity = self.velocity.copy()
+            self.velocity = self.agent_location - self.prev_agent_location
+            self.acceleration = self.velocity - self.prev_velocity
 
             # Terminal if within target radius
-            terminated = bool(self._dist_to_target <= self._target_radius)
+            terminated = bool(self.dist_to_target <= self.target_radius)
 
             # Update reward
             if terminated:
                 reward = 10.0
             else:
-                reward = float(-self._dist_to_target)
+                reward = float(-self.dist_to_target)
         
         # Truncate if max steps reached
-        self._step_count += 1
-        truncated = self._step_count >= self._max_steps_per_episode
+        self.step_count += 1
+        truncated = self.step_count >= self.max_steps_per_episode
 
         # Re-render environment if in human render mode
         if self.render_mode == "human":
-            self._render_frame()
+            self.render_frame()
 
-        return self._get_obs(), reward, terminated, truncated, self._get_info()
+        return self.get_obs(), reward, terminated, truncated, self.get_info()
     
-    def _compute_dist_to_target(self):
+    def compute_dist_to_target(self):
         """
         Computes distance from agent to target
 
         Return:
             dist_to_target (float): distance from agent to target, normalized
         """
-        dist_to_target = np.linalg.norm(self._agent_location - self._target_location)   # Compute distance
-        dist_to_target += np.random.normal(0.01 * dist_to_target, self._dist_noise_std) # Add noise
+        dist_to_target = np.linalg.norm(self.agent_location - self.target_location)     # Compute distance
+        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)  # Add noise
         dist_to_target = max(0.0, dist_to_target)                                       # Remove negative distances
 
         return dist_to_target
     
-    def _env_to_screen(self, location):
+    def env_to_screen(self, location):
         """
         Convert environment coordinates to pygame screen coordinates
         
@@ -217,55 +220,55 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         y_scaled = (location[1] + 1.0) / 2.0
 
         # Convert to pixel coordinates
-        x_pix = int(x_scaled * self._window_size)
-        y_pix = int((1.0 - y_scaled) * self._window_size)  # flip y for pygame
+        x_pix = int(x_scaled * self.window_size)
+        y_pix = int((1.0 - y_scaled) * self.window_size)  # flip y for pygame
         return np.array([x_pix, y_pix])
 
-    def _render_frame(self):
+    def render_frame(self):
         """Render the next frame"""
 
         # Initialize window if it hasn't been created yet
-        if self._window is None:
+        if self.window is None:
             pygame.init()           
             pygame.display.init()   
-            self._window = pygame.display.set_mode((self._window_size, self._window_size))
+            self.window = pygame.display.set_mode((self.window_size, self.window_size))
 
         # Initialize clock if it hasn't been created yet
-        if self._clock is None:
-            self._clock = pygame.time.Clock()
+        if self.clock is None:
+            self.clock = pygame.time.Clock()
 
         # Create white canvas of size window_size x window_size pixels
-        canvas = pygame.Surface((self._window_size, self._window_size))
+        canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((255, 255, 255))
 
         # Convert coordinates (flip y)
-        target_center = tuple(self._env_to_screen(self._target_location))
-        agent_center = tuple(self._env_to_screen(self._agent_location))
+        target_center = tuple(self.env_to_screen(self.target_location))
+        agent_center = tuple(self.env_to_screen(self.agent_location))
        
         # Draw agent and target with a minimum visible radius
-        circle_radius = max(8, int(self._window_size * 0.015))  # slightly larger
+        circle_radius = max(8, int(self.window_size * 0.015))  # slightly larger
         pygame.draw.circle(canvas, (0, 0, 255), agent_center, circle_radius)  # agent: blue
         pygame.draw.circle(canvas, (255, 0, 0), target_center, circle_radius)  # target: red
 
         # Draw target radius scaled to window size
-        pixels_per_unit = self._window_size / 2  
-        radius_pix = int(self._target_radius * pixels_per_unit)  
+        pixels_per_unit = self.window_size / 2  
+        radius_pix = int(self.target_radius * pixels_per_unit)  
         if radius_pix > 0:
             pygame.draw.circle(canvas, (255, 0, 0), target_center, radius_pix, width=1)
 
         # Copy canvas to visible window
-        self._window.blit(canvas, canvas.get_rect())
+        self.window.blit(canvas, canvas.get_rect())
         pygame.event.pump()
         pygame.display.update()
 
         # Update at 4 frames per second
-        self._clock.tick(4)
+        self.clock.tick(4)
         
     def close(self):
         """Close pygame resources if the window has been initialized and is active"""
 
-        if self._window is not None:
+        if self.window is not None:
             pygame.display.quit()  
             pygame.quit()
-            self._window = None
-            self._clock = None
+            self.window = None
+            self.clock = None

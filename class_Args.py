@@ -1,3 +1,5 @@
+# Set simulation parameters
+
 from dataclasses import dataclass, field
 import gymnasium as gym
 import os
@@ -10,8 +12,7 @@ gym.envs.registration.register(
 
 @dataclass
 class Args:
-    exp_name: str = os.path.basename(__file__)[: -len(".py")]   # Experiment name
-    seed: int = None                                            # Experiment seed
+    seed: int = 1    
     torch_deterministic: bool = True
     cuda: bool = True
 
