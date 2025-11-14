@@ -34,16 +34,15 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's distance to target in y direction
         # agent's x coordinate at least measured distance
         # agent's y coordinate at last measured distance
-        # change in distance to target since last measurement
         # agent's x velocity
         # agent's y velocity
         # agent's x acceleration
         # agent's y acceleration
         self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size, 
-                            -self._max_step_size, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self._max_step_size, self._max_step_size, 
-                             self._max_step_size, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
+            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, 
+                            -self._max_step_size, -self._max_step_size, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
+            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0,
+                             self._max_step_size, self._max_step_size, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
             dtype = np.float32
         )
 
@@ -88,7 +87,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self._dist_to_target_vec[1],
             self._prev_agent_location[0],
             self._prev_agent_location[1],
-            self._dist_change,
             self._velocity[0],
             self._velocity[1],
             self._acceleration[0],
@@ -121,7 +119,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Initialize distances
         self._dist_to_target = self._compute_dist_to_target()
         self._dist_to_target_vec = self._agent_location-self._target_location
-        self._dist_change = 0.0
 
         # Initialize current
         self._current = (np.random.uniform(-1/3, 1/3, size=(2,)).astype(np.float32)) * self._max_step_size
@@ -171,10 +168,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self._agent_location = new_location.copy()
 
             # Update distance to target
-            prev_dist_to_target = self._dist_to_target.copy()
             self._dist_to_target = self._compute_dist_to_target()
             self._dist_to_target_vec = self._agent_location - self._dist_to_target_vec
-            self._dist_change = prev_dist_to_target - self._dist_to_target
 
             # Update velocity and acceleration
             self._prev_velocity = self._velocity.copy()
