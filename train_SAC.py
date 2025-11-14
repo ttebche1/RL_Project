@@ -1,6 +1,7 @@
 # Train SAC DRL model on the static target search environment
 
 from class_single_agent_static_target_search_env import SingleAgentStaticTargetSearchEnv as gym_env
+from gymnasium.wrappers import FrameStackObservation
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -20,6 +21,7 @@ def create_vec_env(num_envs, env_params):
     def make_env(i):
         def _init():
             env = gym_env(env_params)
+            env = FrameStackObservation(env, stack_size=4)
             if i == 0:
                 # Only log first environment directly to a CSV in the current directory
                 return Monitor(env, filename=f"training")
@@ -45,7 +47,7 @@ if __name__ == "__main__":
     train_freq = 4              # How often to update the NNs
     gradient_steps = 4          # How many gradient steps to take during each update
     learning_rate = 3e-4        # How fast the NNs update
-    total_timesteps = 500000  # Total timesteps to train the agent
+    total_timesteps = 600000  # Total timesteps to train the agent
     env_params = {
         "env_size": 1000.0,             # Distance from the origin in all four directions in meters
         "target_radius": 300.0,         # Radius for "found" condition in meters

@@ -1,5 +1,6 @@
 # Class for environment that enables an agent to search for a static target
 
+from collections import deque
 from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
@@ -37,12 +38,16 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's x acceleration
         # agent's y acceleration
         self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size, 
+            low = np.array([-1.0, -1.0, 0.0, -1.0, -1.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size, 
                             -self._max_step_size, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 1.0, 1.0, self._max_step_size, self._max_step_size, 
+            high = np.array([1.0, 1.0, 2.83, 1.0, 1.0, 1.0, 1.0, self._max_step_size, self._max_step_size, 
                              self._max_step_size, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
             dtype = np.float32
         )
+
+        # Initialize a stacked buffer
+        self.stack_size = 4
+        self.obs_buffer = deque(maxlen=self.stack_size)
 
         # Initialize action space: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
@@ -77,6 +82,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self._agent_location[0],
             self._agent_location[1],
             self._dist_to_target,
+            self._dist_to_target_vec[0],
+            self._dist_to_target_vec[1],
             self._prev_agent_location[0],
             self._prev_agent_location[1],
             self._dist_change,
@@ -111,6 +118,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
         # Initialize distances
         self._dist_to_target = self._compute_dist_to_target()
+        self._dist_to_target_vec = (self._agent_location-self._target_location) / 2
         self._dist_change = 0.0
 
         # Initialize current
@@ -163,6 +171,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             # Update distance to target
             prev_dist_to_target = self._dist_to_target.copy()
             self._dist_to_target = self._compute_dist_to_target()
+            self._dist_to_target_vec = (self._agent_location - self._dist_to_target_vec) / 2
             self._dist_change = prev_dist_to_target - self._dist_to_target
 
             # Update velocity and acceleration
