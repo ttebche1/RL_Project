@@ -169,7 +169,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
             # Update distance to target
             self._dist_to_target = self._compute_dist_to_target()
-            self._dist_to_target_vec = self._agent_location - self._dist_to_target_vec
+            self._dist_to_target_vec = self._agent_location - self._target_location
 
             # Update velocity and acceleration
             self._prev_velocity = self._velocity.copy()
