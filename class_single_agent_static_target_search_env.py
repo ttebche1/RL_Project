@@ -30,6 +30,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's x coordinate
         # agent's y coordinate 
         # distance to target
+        # agent's distance to target in x direction
+        # agent's distance to target in y direction
         # agent's x coordinate at least measured distance
         # agent's y coordinate at last measured distance
         # change in distance to target since last measurement
@@ -38,9 +40,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's x acceleration
         # agent's y acceleration
         self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -1.0, -1.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size, 
+            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self._max_step_size, -self._max_step_size, 
                             -self._max_step_size, -2*self._max_step_size, -2*self._max_step_size], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 1.0, 1.0, 1.0, 1.0, self._max_step_size, self._max_step_size, 
+            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self._max_step_size, self._max_step_size, 
                              self._max_step_size, 2*self._max_step_size, 2*self._max_step_size], dtype=np.float32),
             dtype = np.float32
         )
@@ -118,7 +120,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
         # Initialize distances
         self._dist_to_target = self._compute_dist_to_target()
-        self._dist_to_target_vec = (self._agent_location-self._target_location) / 2
+        self._dist_to_target_vec = self._agent_location-self._target_location
         self._dist_change = 0.0
 
         # Initialize current
@@ -171,7 +173,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             # Update distance to target
             prev_dist_to_target = self._dist_to_target.copy()
             self._dist_to_target = self._compute_dist_to_target()
-            self._dist_to_target_vec = (self._agent_location - self._dist_to_target_vec) / 2
+            self._dist_to_target_vec = self._agent_location - self._dist_to_target_vec
             self._dist_change = prev_dist_to_target - self._dist_to_target
 
             # Update velocity and acceleration
