@@ -3,7 +3,6 @@
 # - Make the agent move at constant velocity
 # - Update model to angle-based
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
-# - At the end, make it 1/2 of the agent's velocity
 # - Add indicator of current on plot
 #
 # Analyses:

@@ -108,7 +108,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self._dist_to_target_vec = self._agent_location-self._target_location
 
         # Initialize current
-        self._current = (np.random.uniform(-1/3, 1/3, size=(2,)).astype(np.float32)) * self._max_step_size
+        self._current = (np.random.uniform(-1/2, 1/2, size=(2,)).astype(np.float32)) * self._max_step_size
 
         # Initialize velocity and acceleration
         self._velocity = np.array([0.0, 0.0], dtype=np.float32)  
