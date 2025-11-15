@@ -1,12 +1,11 @@
 # Class:
-# - Add particle filter for estimation
-# - Update velocity observation
-# - Add noise to action
+# - Add particle filter for estimation / observations
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 #
 # Analyses:
 # - Added estimator for agent position and corrected observation space
 # - Different parameters and reward - theirs don't even train
+# - Added noise to action
 #
 # Later:
 # - Add moving target w/ trailing

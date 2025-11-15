@@ -21,11 +21,12 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.size = env_params["env_size"]                                          # Distance from origin in all four directions                             
         self.target_radius = env_params["target_radius"] / self.size                # Radius for "found" condition, normalized
         self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
-        self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
-        self.vel_mag = env_params["velocity"] / self.size                      # Agent velocity magnitude, normalized
+        self.vel_mag = env_params["velocity"] / self.size                           # Agent velocity magnitude, normalized
         self.angular_gain = (env_params["velocity"]) / env_params["turning_radius"] # Angular gain in rad/s, normalized 
         self.dt = env_params["dt"]                                                  # Timestep in seconds
         self.current_scale = env_params["max_current_fract"]                        # Max current = this fraction of agent velocity      
+        self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
+        self.action_noise_std = env_params["action_noise_std"]                      # Action noise
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -145,6 +146,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             info: none
         """
         # Ensure action is within action space
+        action  += np.random.normal(0, self.action_noise_std, action.shape)
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
         # Compute new location
