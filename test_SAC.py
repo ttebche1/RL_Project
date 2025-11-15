@@ -19,7 +19,7 @@ if __name__ == "__main__":
     truncated = False
     total_reward = 0
     while not done and not truncated:
-        action, _states = model.predict(obs, deterministic=True)
+        action, _ = model.predict(obs, deterministic=True)
         obs, reward, done, truncated, info = env.step(action)
         total_reward += reward
 
