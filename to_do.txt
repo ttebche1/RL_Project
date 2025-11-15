@@ -1,7 +1,7 @@
 # Class:
-# - Add particle filter for target estimation
-# - Make the agent move at constant velocity
-# - Update model to angle-based
+# - Add particle filter for estimation
+# - Update velocity observation
+# - Add noise to action
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 #
 # Analyses:

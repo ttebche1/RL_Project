@@ -178,12 +178,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             if terminated:
                 reward = 10.0
             else:
-                # Compute yaw error
-                #target_yaw = np.arctan2(self.dist_to_target_vec[1], self.dist_to_target_vec[0])
-                #yaw_error = abs(self.yaw - target_yaw)
-                #yaw_error = min(yaw_error, 2*np.pi - yaw_error)  # Wrap around
-    
-                #reward = float(-self.dist_to_target_mag / 2.83 - yaw_error / np.pi)
                 reward = float(-self.dist_to_target_mag)
         
         # Truncate if max steps reached
