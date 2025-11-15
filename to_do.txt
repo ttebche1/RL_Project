@@ -17,6 +17,7 @@
 # - Add a more complex current model
 # - Minimize power expended rather than distance
 # - Add complex 3D bathymetry (obstacles)
+# - What if the target moves at varying speeds?
 #
 # Multi-agents:
 # - Add multiple agents
