@@ -18,12 +18,14 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         np.random.seed(None)
 
         # Initialize parameters
-        self.size = env_params["env_size"]                                 # Distance from origin in all four directions                             
-        self.target_radius = env_params["target_radius"] / self.size      # Radius for "found" condition, normalized
-        self.max_step_size = env_params["max_step_size"] / self.size      # Maximum step size in meters, normalized
-        self.max_steps_per_episode = env_params["max_steps_per_episode"]   # Maximum steps per episode
-        self.dist_noise_std = env_params["dist_noise_std"] / self.size    # Standard deviation of Gaussian noise added to distance measurements, normalized      
-        self.starting_location = np.array([0.0, 0.0], dtype=np.float32)    # Agent starting location
+        self.size = env_params["env_size"]                                          # Distance from origin in all four directions                             
+        self.target_radius = env_params["target_radius"] / self.size                # Radius for "found" condition, normalized
+        self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
+        self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
+        self.vel_mag = env_params["velocity"] / self.size                      # Agent velocity magnitude, normalized
+        self.angular_gain = (env_params["velocity"]) / env_params["turning_radius"] # Angular gain in rad/s, normalized 
+        self.dt = env_params["dt"]                                                  # Timestep in seconds
+        self.current_scale = env_params["max_current_fract"]                        # Max current = this fraction of agent velocity      
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -36,13 +38,13 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's x velocity
         # agent's y velocity
         self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self.max_step_size, -self.max_step_size], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self.max_step_size, self.max_step_size], dtype=np.float32),
+            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self.vel_mag, -self.vel_mag], dtype=np.float32),
+            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self.vel_mag, self.vel_mag], dtype=np.float32),
             dtype = np.float32
         )
 
-        # Initialize action space: delta_x, delta_y in [-1, 1], will be scaled by self._max_step
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
+        # Initialize action space: yaw (heading angle) in [-1, 1], will be scaled by angular gain
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
 
         # Set render mode
         self.render_mode = render_mode  
@@ -64,20 +66,19 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
                 distance to target
                 agent's x coordinate at previous distance
                 agent's y at previous distance
-                change in distance
-                agent's x velocity
-                agent's y velocity
+                agent's x velocity (not accounting for current)
+                agent's y velocity (not accounting for current)
         """
         return np.array([
-            self.agent_location[0],
-            self.agent_location[1],
-            self.dist_to_target,
+            self.agent_loc_vec[0],
+            self.agent_loc_vec[1],
+            self.dist_to_target_mag,
             self.dist_to_target_vec[0],
             self.dist_to_target_vec[1],
-            self.prev_agent_location[0],
-            self.prev_agent_location[1],
-            self.velocity[0],
-            self.velocity[1]],
+            self.prev_agent_loc_vec[0],
+            self.prev_agent_loc_vec[1],
+            self.vel_vec[0],
+            self.vel_vec[1]],
         dtype=np.float32)
     
     def get_info(self):
@@ -98,20 +99,26 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Set the seed of the reset function in gym.Env (parent class)
         super().reset(seed=seed)
 
-        # Initialize locations
-        self.agent_location = self.starting_location.copy()                                       # Center
-        self.prev_agent_location = self.starting_location.copy()
-        self.target_location = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32) # Random target location
+        # Initialize agent
+        self.agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)   # Center
+        self.prev_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
+        self.vel_vec = np.array([0.0, 0.0], dtype=np.float32)  
+        self.yaw = 0 
+
+        # Initialize target
+        self.target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
 
         # Initialize distances
-        self.dist_to_target = self.compute_dist_to_target()
-        self.dist_to_target_vec = self.agent_location-self.target_location
+        self.dist_to_target_mag = self.compute_dist_to_target()
+        self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
 
         # Initialize current
-        self.current = (np.random.uniform(-1/2, 1/2, size=(2,)).astype(np.float32)) * self.max_step_size
-
-        # Initialize velocity and acceleration
-        self.velocity = np.array([0.0, 0.0], dtype=np.float32)  
+        current_mag = np.random.uniform(0, self.vel_mag * self.current_scale)
+        current_angle = np.random.uniform(0, 2*np.pi)
+        self.current_vec = np.array([
+            current_mag * np.cos(current_angle),
+            current_mag * np.sin(current_angle)],
+        dtype=np.float32)
 
         # Initialize step count
         self.step_count = 0
@@ -141,32 +148,43 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
         # Compute new location
-        new_location = self.agent_location + action * self.max_step_size + self.current
+        self.yaw += action[0] * self.angular_gain * self.dt # In radians
+        vel_vec = np.array([
+            self.vel_mag * np.cos(self.yaw),
+            self.vel_mag * np.sin(self.yaw)
+        ])
+        new_agent_loc_vec = self.agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
 
         # Check if new location is in bounds
-        if np.any(new_location < -1.0) or np.any(new_location > 1.0):
+        if np.any(new_agent_loc_vec < -1.0) or np.any(new_agent_loc_vec > 1.0):
             reward = -1.0   # If out of bounds, remain in the same place and give a penalty
             terminated = False
         else:
             # If in bounds, move agent
-            self.prev_agent_location = self.agent_location.copy()
-            self.agent_location = new_location.copy()
+            self.prev_agent_loc_vec = self.agent_loc_vec.copy()
+            self.agent_loc_vec = new_agent_loc_vec.copy()
+
+            # Update velocity
+            self.vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
 
             # Update distance to target
-            self.dist_to_target = self.compute_dist_to_target()
-            self.dist_to_target_vec = self.agent_location - self.target_location
-
-            # Update velocity and acceleration
-            self.velocity = self.agent_location - self.prev_agent_location
+            self.dist_to_target_mag = self.compute_dist_to_target()
+            self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
 
             # Terminal if within target radius
-            terminated = bool(self.dist_to_target <= self.target_radius)
+            terminated = bool(self.dist_to_target_mag <= self.target_radius)
 
             # Update reward
             if terminated:
                 reward = 10.0
             else:
-                reward = float(-self.dist_to_target)
+                # Compute yaw error
+                #target_yaw = np.arctan2(self.dist_to_target_vec[1], self.dist_to_target_vec[0])
+                #yaw_error = abs(self.yaw - target_yaw)
+                #yaw_error = min(yaw_error, 2*np.pi - yaw_error)  # Wrap around
+    
+                #reward = float(-self.dist_to_target_mag / 2.83 - yaw_error / np.pi)
+                reward = float(-self.dist_to_target_mag)
         
         # Truncate if max steps reached
         self.step_count += 1
@@ -185,8 +203,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         Return:
             dist_to_target (float): distance from agent to target, normalized
         """
-        dist_to_target = np.linalg.norm(self.agent_location - self.target_location)   # Compute distance
-        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std) # Add noise
+        dist_to_target = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)       # Compute distance
+        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)  # Add noise
         dist_to_target = max(0.0, dist_to_target)                                       # Remove negative distances
 
         return dist_to_target
@@ -237,8 +255,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
                 point = self.env_to_screen(point)
 
                 # Scale current arrow by pixels
-                pixels_per_env_unit = self.window_size / 2                      # Get number of pixels per env unit
-                arrow_vec = self.current * arrow_scale * pixels_per_env_unit    # Get scaled arrow vector
+                pixels_per_env_unit = self.window_size / 2                          # Get number of pixels per env unit
+                arrow_vec = self.current_vec * arrow_scale * pixels_per_env_unit    # Get scaled arrow vector
 
                 # Verify arrow isn't smaller than the minimum length
                 arrow_length = np.linalg.norm(arrow_vec)    # Get arrow length
@@ -289,8 +307,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         canvas.fill((255, 255, 255))
 
         # Convert coordinates (flip y)
-        target_center = tuple(self.env_to_screen(self.target_location))
-        agent_center = tuple(self.env_to_screen(self.agent_location))
+        target_center = tuple(self.env_to_screen(self.target_loc_vec))
+        agent_center = tuple(self.env_to_screen(self.agent_loc_vec))
 
         # Draw current
         self.draw_current_arrows(canvas)
