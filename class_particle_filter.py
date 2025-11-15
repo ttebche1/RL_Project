@@ -1,6 +1,6 @@
 import numpy as np
 
-class TargetParticleFilter:
+class ParticleFilter:
     def __init__(self, num_particles = 200):
         self.num_particles = num_particles
         self.particles = np.random.uniform(low=-1.0, high=1.0, size=(num_particles, 2)) # Particle locations, uniform across the environment
