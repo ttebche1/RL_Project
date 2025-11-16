@@ -1,6 +1,7 @@
 # Class for environment that enables an agent to search for a static target
 
 from gymnasium import spaces
+from class_least_squares_filter import LeastSquaresFilter
 import gymnasium as gym
 import numpy as np
 import pygame
@@ -28,12 +29,15 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
         self.action_noise_std = env_params["action_noise_std"]                      # Action noise
 
+        # Create target estimation filter
+        self.target_estimator = LeastSquaresFilter()
+
         # Initialize observation space: 
         # agent's x coordinate
         # agent's y coordinate 
         # distance to target
-        # agent's distance to target in x direction
-        # agent's distance to target in y direction
+        # distance between agent and estimated target in x direction
+        # distance between agent and estimated target in y direction
         # agent's x coordinate at least measured distance
         # agent's y coordinate at last measured distance
         # agent's x velocity
@@ -48,7 +52,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
 
         # Set render mode
-        self.render_mode = render_mode  
+        self.render_mode = render_mode 
         self.window_size = 512  
         self.window = None
         self.clock = None    
@@ -64,22 +68,32 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             observation (numpy array):
                 agent's x coordinate
                 agent's y coordiante
-                distance to target
+                measured distance to target (with noise)
+                distance between agent and estimated target in x direction
+                distance between agent and estimated target in y direction
                 agent's x coordinate at previous distance
                 agent's y at previous distance
                 agent's x velocity (not accounting for current)
                 agent's y velocity (not accounting for current)
         """
+        # Get distance between agent and target location
+        est_target_loc_vec = self.target_estimator.estimate
+        est_dist_x = est_target_loc_vec[0] - self.agent_loc_vec[0]
+        est_dist_y = est_target_loc_vec[1] - self.agent_loc_vec[1]
+
+        # Get agent velocity
+        vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
+
         return np.array([
             self.agent_loc_vec[0],
             self.agent_loc_vec[1],
-            self.dist_to_target_mag,
-            self.dist_to_target_vec[0],
-            self.dist_to_target_vec[1],
+            self.measured_dist_to_target_mag,
+            est_dist_x,
+            est_dist_y,
             self.prev_agent_loc_vec[0],
             self.prev_agent_loc_vec[1],
-            self.vel_vec[0],
-            self.vel_vec[1]],
+            vel_vec[0],
+            vel_vec[1]],
         dtype=np.float32)
     
     def get_info(self):
@@ -109,9 +123,14 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Initialize target
         self.target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
 
+        # Reset particle filter
+        self.target_estimator = LeastSquaresFilter()
+
         # Initialize distances
-        self.dist_to_target_mag = self.compute_dist_to_target()
-        self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+        self.true_dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+        self.true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
+        self.measured_dist_to_target_mag = self.true_dist_to_target_mag + \
+            max(0.0, np.random.normal(0.01 * self.true_dist_to_target_mag, self.dist_noise_std))
 
         # Initialize current
         current_mag = np.random.uniform(0, self.vel_mag * self.current_scale)
@@ -145,6 +164,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             truncated (bool): whether episode was truncated (set to False)
             info: none
         """
+        # Reset reward
+        reward = 0.0
+
         # Ensure action is within action space
         action  += np.random.normal(0, self.action_noise_std, action.shape)
         action = np.clip(action, self.action_space.low, self.action_space.high)
@@ -158,30 +180,40 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         new_agent_loc_vec = self.agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
 
         # Check if new location is in bounds
+        in_bounds = True
         if np.any(new_agent_loc_vec < -1.0) or np.any(new_agent_loc_vec > 1.0):
-            reward = -1.0   # If out of bounds, remain in the same place and give a penalty
-            terminated = False
-        else:
-            # If in bounds, move agent
-            self.prev_agent_loc_vec = self.agent_loc_vec.copy()
-            self.agent_loc_vec = new_agent_loc_vec.copy()
+            in_bounds = False
+            reward -= 10.0
 
-            # Update velocity
-            self.vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
+        # Update agent location
+        self.prev_agent_loc_vec = self.agent_loc_vec.copy()
+        self.agent_loc_vec = new_agent_loc_vec.copy()
 
-            # Update distance to target
-            self.dist_to_target_mag = self.compute_dist_to_target()
-            self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
-
-            # Terminal if within target radius
-            terminated = bool(self.dist_to_target_mag <= self.target_radius)
-
-            # Update reward
-            if terminated:
-                reward = 10.0
-            else:
-                reward = float(-self.dist_to_target_mag)
+        # Update distance to target
+        self.true_dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+        self.true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
+        self.measured_dist_to_target_mag = self.true_dist_to_target_mag + \
+            max(0.0, np.random.normal(0.01 * self.true_dist_to_target_mag, self.dist_noise_std))
         
+        # Update distance to target reward component
+        reward -= self.true_dist_to_target_mag
+
+        # Update target estimation
+        self.target_estimator.update(
+            agent_loc_vec=self.agent_loc_vec,
+            dist_measurement=self.measured_dist_to_target_mag,
+            measurement_std=self.dist_noise_std
+        )
+        filter_error = np.linalg.norm(self.target_estimator.estimate - self.target_loc_vec)
+
+        # Update filter reward component
+        #reward += 10.0 if filter_error < (3.0/self.size) else -filter_error
+
+        # Terminal if within target radius
+        terminated = bool(self.true_dist_to_target_mag <= self.target_radius)
+        if terminated:
+            reward = 10.0 #20.0
+
         # Truncate if max steps reached
         self.step_count += 1
         truncated = self.step_count >= self.max_steps_per_episode
@@ -190,20 +222,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         if self.render_mode == "human":
             self.render_frame()
 
-        return self.get_obs(), reward, terminated, truncated, self.get_info()
-    
-    def compute_dist_to_target(self):
-        """
-        Computes distance from agent to target
-
-        Return:
-            dist_to_target (float): distance from agent to target, normalized
-        """
-        dist_to_target = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)       # Compute distance
-        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)  # Add noise
-        dist_to_target = max(0.0, dist_to_target)                                       # Remove negative distances
-
-        return dist_to_target
+        return self.get_obs(), float(reward), terminated, truncated, self.get_info()
     
     def env_to_screen(self, location):
         """
@@ -288,6 +307,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
     def render_frame(self):
         """Render the next frame"""
 
+        # Set size of circles
+        circle_radius = max(8, int(self.window_size * 0.015)) 
+
         # Initialize window if it hasn't been created yet
         if self.window is None:
             pygame.init()           
@@ -308,9 +330,12 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
         # Draw current
         self.draw_current_arrows(canvas)
+
+        # Draw filter estimate
+        estimate_center = tuple(self.env_to_screen(self.target_estimator.estimate))
+        pygame.draw.circle(canvas, (0, 255, 0), estimate_center, circle_radius) # Green
        
         # Draw agent and target with a minimum visible radius
-        circle_radius = max(8, int(self.window_size * 0.015)) 
         pygame.draw.circle(canvas, (0, 0, 255), agent_center, circle_radius)    # Agent: blue
         pygame.draw.circle(canvas, (255, 0, 0), target_center, circle_radius)   # Target: red
 
