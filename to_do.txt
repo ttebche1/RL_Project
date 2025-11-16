@@ -1,6 +1,5 @@
 # Class:
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
-# - OPTION: Try RNN instead of particle filter
 # - OPTION: Add estimator for agent position and corrected observation space
 # - OPTION: minimize power expended; remove constant velocity
 #
@@ -10,6 +9,7 @@
 #
 # Later:
 # - Add moving target w/ trailing
+# - If LS doesn't work, try using a particle filter instead
 # - Add baseline comparison
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
