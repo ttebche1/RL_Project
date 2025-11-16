@@ -2,6 +2,7 @@
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
 # - OPTION: Add estimator for agent position and corrected observation space
 # - OPTION: minimize power expended; remove constant velocity
+# - OPTION: improve training speed with hyperparameter tuning, curriculum training, or preset weights based on an existing search algorithm
 #
 # Analyses:
 # - Different parameters and reward - theirs don't even train
@@ -9,7 +10,6 @@
 #
 # Later:
 # - Add moving target w/ trailing
-# - If LS doesn't work, try using a particle filter instead
 # - Add baseline comparison
 # - Add 3D environment (depth)
 # - Add complex comms things such as doppler
@@ -24,8 +24,3 @@
 # - Try no comms
 # - Add a larger search space than 2km
 # - Try different multi-RL algorithms
-#
-# Speed:
-# - Does prompting it with a non-ML search algorithm help?
-# - Curriculum training 
-# - Automatically tune hyperparameters
