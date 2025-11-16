@@ -1,9 +1,10 @@
 # Class:
-# - Add particle filter for estimation / observations
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
+# - OPTION: Try RNN instead of particle filter
+# - OPTION: Add estimator for agent position and corrected observation space
+# - OPTION: minimize power expended; remove constant velocity
 #
 # Analyses:
-# - Added estimator for agent position and corrected observation space
 # - Different parameters and reward - theirs don't even train
 # - Added noise to action
 #
@@ -14,7 +15,6 @@
 # - Add complex comms things such as doppler
 # - Turn it into a whale problem!
 # - Add a more complex current model
-# - Add physics-based model; minimize power expended; remove constant velocity
 # - Add complex 3D bathymetry (obstacles)
 # - What if the target moves at varying speeds?
 #
