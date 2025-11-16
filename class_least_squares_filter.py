@@ -40,6 +40,6 @@ class LeastSquaresFilter:
 
         # Update estimate
         self.estimate = self.estimate + K * dist_est_error
-        self.cov = self.cov - (K.reshape(-1, 1) @ H.reshape(1, -1)) @ self.cov
+        self.cov = (np.eye(2) - np.outer(K, H)) @ self.cov @ (np.eye(2) - np.outer(K, H)).T + np.outer(K, K) * R
 
         return self.estimate
