@@ -145,6 +145,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             truncated (bool): whether episode was truncated (set to False)
             info: none
         """
+        reward = 0.0
+
         # Ensure action is within action space
         action  += np.random.normal(0, self.action_noise_std, action.shape)
         action = np.clip(action, self.action_space.low, self.action_space.high)
@@ -159,28 +161,27 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
         # Check if new location is in bounds
         if np.any(new_agent_loc_vec < -1.0) or np.any(new_agent_loc_vec > 1.0):
-            reward = -1.0   # If out of bounds, remain in the same place and give a penalty
-            terminated = False
+            reward = -10.0   # If out of bounds, give a penalty
+
+        # Move agent
+        self.prev_agent_loc_vec = self.agent_loc_vec.copy()
+        self.agent_loc_vec = new_agent_loc_vec.copy()
+
+        # Update velocity
+        self.vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
+
+        # Update distance to target
+        self.dist_to_target_mag = self.compute_dist_to_target()
+        self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+
+        # Terminal if within target radius
+        terminated = bool(self.dist_to_target_mag <= self.target_radius)
+
+        # Update reward
+        if terminated:
+            reward = 10.0
         else:
-            # If in bounds, move agent
-            self.prev_agent_loc_vec = self.agent_loc_vec.copy()
-            self.agent_loc_vec = new_agent_loc_vec.copy()
-
-            # Update velocity
-            self.vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
-
-            # Update distance to target
-            self.dist_to_target_mag = self.compute_dist_to_target()
-            self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
-
-            # Terminal if within target radius
-            terminated = bool(self.dist_to_target_mag <= self.target_radius)
-
-            # Update reward
-            if terminated:
-                reward = 10.0
-            else:
-                reward = float(-self.dist_to_target_mag)
+            reward = float(-self.dist_to_target_mag)
         
         # Truncate if max steps reached
         self.step_count += 1
