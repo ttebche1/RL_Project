@@ -73,7 +73,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Update velocity
         vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
 
-
         return np.array([
             self.agent_loc_vec[0],
             self.agent_loc_vec[1],
