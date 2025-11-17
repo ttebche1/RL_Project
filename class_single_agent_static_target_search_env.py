@@ -65,24 +65,21 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
                 agent's x coordinate
                 agent's y coordiante
                 distance to target
-                agent's x coordinate at previous distance
-                agent's y at previous distance
+                agent's x coordinate at last measured distance
+                agent's y at last measured distance
                 agent's x velocity (not accounting for current)
                 agent's y velocity (not accounting for current)
         """
-        # Update velocity
-        vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
-
         return np.array([
             self.agent_loc_vec[0],
             self.agent_loc_vec[1],
             self.dist_to_target_mag,
             self.dist_to_target_vec[0],
             self.dist_to_target_vec[1],
-            self.prev_agent_loc_vec[0],
-            self.prev_agent_loc_vec[1],
-            vel_vec[0],
-            vel_vec[1]],
+            self.prev_measurement_loc_vec[0],
+            self.prev_measurement_loc_vec[1],
+            self.vel_vec[0],
+            self.vel_vec[1]],
         dtype=np.float32)
     
     def get_info(self):
@@ -105,7 +102,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
 
         # Initialize agent
         self.agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)   # Center
-        self.prev_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
+        self.prev_measurement_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
+        self.vel_vec = np.array([0.0, 0.0], dtype=np.float32)
         self.yaw = 0 
 
         # Initialize target
@@ -153,24 +151,27 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         action  += np.random.normal(0, self.action_noise_std, action.shape)
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
-        # Compute new location
+        # Compute and take new location
         self.yaw += action[0] * self.angular_gain * self.dt # In radians
         vel_vec = np.array([
             self.vel_mag * np.cos(self.yaw),
             self.vel_mag * np.sin(self.yaw)
         ])
-        new_agent_loc_vec = self.agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
+        prev_agent_loc_vec = self.agent_loc_vec.copy()
+        self.agent_loc_vec = self.agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
 
-        # Check if new location is in bounds
-        if np.any(new_agent_loc_vec < -1.0) or np.any(new_agent_loc_vec > 1.0):
-            reward = -10.0   # If out of bounds, give a penalty
+        # Penalize agent if outside of bounds
+        if np.any(self.agent_loc_vec < -1.0) or np.any(self.agent_loc_vec > 1.0):
+            reward = -10.0
 
-        # Move agent
-        self.prev_agent_loc_vec = self.agent_loc_vec.copy()
-        self.agent_loc_vec = new_agent_loc_vec.copy()
+        # Update velocity
+        self.vel_vec = self.agent_loc_vec - prev_agent_loc_vec
 
-        # Update distance to target
-        self.dist_to_target_mag = self.compute_dist_to_target()
+        # Update distance to target 90% of the time (10% dropped distance measurements)
+        if np.random.rand() > 0.1:
+            self.dist_to_target_mag = self.compute_dist_to_target()
+            self.prev_measurement_loc_vec = self.agent_loc_vec.copy() 
+
         self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
 
         # Terminal if within target radius
