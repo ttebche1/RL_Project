@@ -70,6 +70,10 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
                 agent's x velocity (not accounting for current)
                 agent's y velocity (not accounting for current)
         """
+        # Update velocity
+        vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
+
+
         return np.array([
             self.agent_loc_vec[0],
             self.agent_loc_vec[1],
@@ -78,8 +82,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self.dist_to_target_vec[1],
             self.prev_agent_loc_vec[0],
             self.prev_agent_loc_vec[1],
-            self.vel_vec[0],
-            self.vel_vec[1]],
+            vel_vec[0],
+            vel_vec[1]],
         dtype=np.float32)
     
     def get_info(self):
@@ -103,7 +107,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Initialize agent
         self.agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)   # Center
         self.prev_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
-        self.vel_vec = np.array([0.0, 0.0], dtype=np.float32)  
         self.yaw = 0 
 
         # Initialize target
@@ -166,9 +169,6 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Move agent
         self.prev_agent_loc_vec = self.agent_loc_vec.copy()
         self.agent_loc_vec = new_agent_loc_vec.copy()
-
-        # Update velocity
-        self.vel_vec = self.agent_loc_vec - self.prev_agent_loc_vec
 
         # Update distance to target
         self.dist_to_target_mag = self.compute_dist_to_target()
