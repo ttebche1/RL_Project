@@ -110,7 +110,12 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
 
         # Initialize distances
-        self.dist_to_target_mag = self.compute_dist_to_target()
+        true_dist_to_target_mag = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)
+        if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
+            self.dist_to_target_mag = self.compute_dist_to_target()
+        else:  
+            self.dist_to_target_mag = 2.83
+
         self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
 
         # Initialize current
