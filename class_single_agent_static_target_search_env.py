@@ -168,7 +168,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.vel_vec = self.agent_loc_vec - prev_agent_loc_vec
 
         # Update distance to target 90% of the time (10% dropped distance measurements)
-        if np.random.rand() > 0.1:
+        true_dist_to_target_mag = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)
+        if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
             self.dist_to_target_mag = self.compute_dist_to_target()
             self.prev_measurement_loc_vec = self.agent_loc_vec.copy() 
 

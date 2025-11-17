@@ -1,12 +1,11 @@
 # Class:
 # - Add particle filter for estimation / observations
-# - If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
-# - Add estimator for agent position/correct observation space OR automatically tune hyperparams OR minimize power consumption
+# - Add estimator for agent position/correct observation space OR speed OR minimize power consumption
 #
 # Analyses:
-# - Added estimator for agent position and corrected observation space
 # - Different parameters and reward - theirs don't even train
 # - Added noise to action
+# - Increased max range between agent and target (and can communicate up to 1km instead of 0.9km)
 #
 # Later:
 # - Add moving target w/ trailing
