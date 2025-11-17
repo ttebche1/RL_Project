@@ -55,7 +55,9 @@ if __name__ == "__main__":
         "max_current_fract": 0.5,       # Max current = this fraction of agent velocity 
         "dt": 30,                       # Time step in seconds
         "dist_noise_std": 1.0,          # Standard deviation of Gaussian noise added to distance measurements in meters
-        "action_noise_std": 0.1         # Action noise 
+        "action_noise_std": 0.1,        # Action noise 
+        "render_mode": None,            # No rendering during training
+        "test_mode": False              # Training mode
     }
 
     # Create vectorized environments with training result logs

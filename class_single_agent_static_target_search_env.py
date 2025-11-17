@@ -1,12 +1,13 @@
 # Class for environment that enables an agent to search for a static target
 
+from class_recursive_least_squares_filter import RecursiveLeastSquaresFilter as rls
 from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
 import pygame
 
 class SingleAgentStaticTargetSearchEnv(gym.Env):
-    def __init__(self, env_params, render_mode=None):
+    def __init__(self, env_params):
         """
         Initialize environment
 
@@ -27,6 +28,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.current_scale = env_params["max_current_fract"]                        # Max current = this fraction of agent velocity      
         self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
         self.action_noise_std = env_params["action_noise_std"]                      # Action noise
+        self.test_mode = env_params["test_mode"]                                    # Training or test mode
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -48,7 +50,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
 
         # Set render mode
-        self.render_mode = render_mode  
+        self.render_mode = env_params["render_mode"]  
         self.window_size = 512  
         self.window = None
         self.clock = None    
@@ -70,12 +72,20 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
                 agent's x velocity (not accounting for current)
                 agent's y velocity (not accounting for current)
         """
+        if not self.test_mode:
+            # Use true target position
+            dist_to_target_vec = self.dist_to_target_vec
+        else:
+            # Use RLS estimated target position
+            estimated_target_pos = self.rls.get_target_loc()
+            dist_to_target_vec = self.agent_loc_vec - estimated_target_pos
+            
         return np.array([
             self.agent_loc_vec[0],
             self.agent_loc_vec[1],
             self.dist_to_target_mag,
-            self.dist_to_target_vec[0],
-            self.dist_to_target_vec[1],
+            dist_to_target_vec[0],
+            dist_to_target_vec[1],
             self.prev_measurement_loc_vec[0],
             self.prev_measurement_loc_vec[1],
             self.vel_vec[0],
@@ -112,6 +122,11 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Initialize distances
         self.dist_to_target_mag = self.compute_dist_to_target()
         self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+
+        # Initialize RLS filter for test mode
+        if self.test_mode:
+            self.rls = rls()
+            self.rls.update(self.agent_loc_vec, self.dist_to_target_mag)
 
         # Initialize current
         current_mag = np.random.uniform(0, self.vel_mag * self.current_scale)
@@ -170,8 +185,13 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # Update distance to target 90% of the time (10% dropped distance measurements)
         true_dist_to_target_mag = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)
         if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
+            # Update distance measurement
             self.dist_to_target_mag = self.compute_dist_to_target()
             self.prev_measurement_loc_vec = self.agent_loc_vec.copy() 
+
+            # Update RLS filter in test mode
+            if self.test_mode:
+                self.rls.update(self.agent_loc_vec, self.dist_to_target_mag)
 
         self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
 
@@ -315,6 +335,12 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         circle_radius = max(8, int(self.window_size * 0.015)) 
         pygame.draw.circle(canvas, (0, 0, 255), agent_center, circle_radius)    # Agent: blue
         pygame.draw.circle(canvas, (255, 0, 0), target_center, circle_radius)   # Target: red
+
+        # If in test mode, draw estimated target location
+        if self.test_mode:
+            estimated_target_pos = self.rls.get_target_loc()
+            estimated_target_center = tuple(self.env_to_screen(estimated_target_pos))
+            pygame.draw.circle(canvas, (0, 255, 0), estimated_target_center, circle_radius, width=1)    # Estimated target: green
 
         # Draw target radius scaled to window size
         pixels_per_unit = self.window_size / 2  

@@ -11,7 +11,9 @@ if __name__ == "__main__":
         env_params = json.load(f)
 
     # Create environment with visual rendering
-    env = gym_env(env_params, render_mode="human")
+    env_params["render_mode"] = "human"
+    env_params["test_mode"] = True
+    env = gym_env(env_params)
     obs, info = env.reset()
 
     # Run one episode
