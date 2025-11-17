@@ -1,6 +1,8 @@
 # Class:
-# - Add particle filter for estimation / observations
-# - Add estimator for agent position/correct observation space OR speed OR minimize power consumption
+# - Decrease turning radius
+# - Add particle filter for estimation / observations OR add noise to target stuff to simulate a filter
+# - Add estimator for agent position/correct observation space
+# - Minimize power consumption
 #
 # Analyses:
 # - Different parameters and reward - theirs don't even train
