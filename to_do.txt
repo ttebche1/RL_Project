@@ -1,6 +1,7 @@
 # Class:
 # - Add particle filter for estimation / observations
 # - Add dropped comms: 10% drop rate, and If distance between agent and target greater than 0.9 (normalized to 1km), agent does not receive range measurement
+# - Add estimator for agent position/correct observation space OR automatically tune hyperparams OR minimize power consumption
 #
 # Analyses:
 # - Added estimator for agent position and corrected observation space
