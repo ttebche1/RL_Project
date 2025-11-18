@@ -62,24 +62,26 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         
         Return:
             observation (numpy array):
-                agent's x coordinate
-                agent's y coordiante
-                distance to target
+                agent's x coordinate, assumed via dead-reckoning (not true position)
+                agent's y coordiante, assumed via dead-reckoning (not true position)
+                distance to target magnitude, measured
+                distance to target in x direction, true
+                distance to target in y direction, true
                 agent's x coordinate at last measured distance
                 agent's y at last measured distance
-                agent's x velocity (not accounting for current)
-                agent's y velocity (not accounting for current)
+                agent's x velocity, measured with dvl (true)
+                agent's y velocity, measured with dvl (true)
         """
         return np.array([
-            self.agent_loc_vec[0],
-            self.agent_loc_vec[1],
-            self.dist_to_target_mag,
-            self.dist_to_target_vec[0],
-            self.dist_to_target_vec[1],
-            self.prev_measurement_loc_vec[0],
-            self.prev_measurement_loc_vec[1],
-            self.vel_vec[0],
-            self.vel_vec[1]],
+            self.dr_agent_loc_vec[0],
+            self.dr_agent_loc_vec[1],
+            self.meas_dist_to_target_mag,
+            self.true_dist_to_target_vec[0],
+            self.true_dist_to_target_vec[1],
+            self.meas_agent_loc_vec[0],
+            self.meas_agent_loc_vec[1],
+            self.dvl_vel_vec[0],
+            self.dvl_vel_vec[1]],
         dtype=np.float32)
     
     def get_info(self):
@@ -101,22 +103,22 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         super().reset(seed=seed)
 
         # Initialize agent
-        self.agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)   # Center
-        self.prev_measurement_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
-        self.vel_vec = np.array([0.0, 0.0], dtype=np.float32)
+        self.true_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)    # Center
+        self.dr_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)      
+        self.meas_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
+        self.dvl_vel_vec = np.array([0.0, 0.0], dtype=np.float32)
         self.yaw = 0 
 
         # Initialize target
-        self.target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
+        self.true_target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
 
         # Initialize distances
-        true_dist_to_target_mag = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)
+        self.true_dist_to_target_vec = self.true_agent_loc_vec - self.true_target_loc_vec
+        true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
         if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
-            self.dist_to_target_mag = self.compute_dist_to_target()
+            self.meas_dist_to_target_mag = self.compute_dist_to_target()
         else:  
-            self.dist_to_target_mag = 2.83
-
-        self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+            self.meas_dist_to_target_mag = 2.83
 
         # Initialize current
         current_mag = np.random.uniform(0, self.vel_mag * self.current_scale)
@@ -162,32 +164,32 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self.vel_mag * np.cos(self.yaw),
             self.vel_mag * np.sin(self.yaw)
         ])
-        prev_agent_loc_vec = self.agent_loc_vec.copy()
-        self.agent_loc_vec = self.agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
+        prev_true_agent_loc_vec = self.true_agent_loc_vec.copy()
+        self.dr_agent_loc_vec = self.dr_agent_loc_vec + vel_vec * self.dt
+        self.true_agent_loc_vec = prev_true_agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
 
         # Penalize agent if outside of bounds
-        if np.any(self.agent_loc_vec < -1.0) or np.any(self.agent_loc_vec > 1.0):
+        if np.any(self.true_agent_loc_vec < -1.0) or np.any(self.true_agent_loc_vec > 1.0):
             reward = -10.0
 
         # Update velocity
-        self.vel_vec = self.agent_loc_vec - prev_agent_loc_vec
+        self.dvl_vel_vec = self.true_agent_loc_vec - prev_true_agent_loc_vec
 
         # Update distance to target 90% of the time (10% dropped distance measurements)
-        true_dist_to_target_mag = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)
+        self.true_dist_to_target_vec = self.true_agent_loc_vec - self.true_target_loc_vec
+        true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
         if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
-            self.dist_to_target_mag = self.compute_dist_to_target()
-            self.prev_measurement_loc_vec = self.agent_loc_vec.copy() 
-
-        self.dist_to_target_vec = self.agent_loc_vec - self.target_loc_vec
+            self.meas_dist_to_target_mag = self.compute_dist_to_target()
+            self.meas_agent_loc_vec = self.dr_agent_loc_vec.copy() 
 
         # Terminal if within target radius
-        terminated = bool(self.dist_to_target_mag <= self.target_radius)
+        terminated = bool(true_dist_to_target_mag <= self.target_radius)
 
         # Update reward
         if terminated:
             reward = 10.0
         else:
-            reward = float(-self.dist_to_target_mag)
+            reward = float(-true_dist_to_target_mag)
         
         # Truncate if max steps reached
         self.step_count += 1
@@ -206,9 +208,9 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         Return:
             dist_to_target (float): distance from agent to target, normalized
         """
-        dist_to_target = np.linalg.norm(self.agent_loc_vec - self.target_loc_vec)       # Compute distance
-        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)  # Add noise
-        dist_to_target = max(0.0, dist_to_target)                                       # Remove negative distances
+        dist_to_target = np.linalg.norm(self.true_agent_loc_vec - self.true_target_loc_vec) # Compute distance
+        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)      # Add noise
+        dist_to_target = max(0.0, dist_to_target)                                           # Remove negative distances
 
         return dist_to_target
     
@@ -310,8 +312,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         canvas.fill((255, 255, 255))
 
         # Convert coordinates (flip y)
-        target_center = tuple(self.env_to_screen(self.target_loc_vec))
-        agent_center = tuple(self.env_to_screen(self.agent_loc_vec))
+        target_center = tuple(self.env_to_screen(self.true_target_loc_vec))
+        agent_center = tuple(self.env_to_screen(self.true_agent_loc_vec))
 
         # Draw current
         self.draw_current_arrows(canvas)
