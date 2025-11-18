@@ -30,3 +30,4 @@
 # - Does prompting it with a non-ML search algorithm help?
 # - Curriculum training 
 # - Automatically tune hyperparameters
+# - Does adding change in distance vectors or magnitude improve speed of AUV script?
