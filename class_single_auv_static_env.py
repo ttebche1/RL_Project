@@ -5,7 +5,7 @@ import gymnasium as gym
 import numpy as np
 import pygame
 
-class SingleAgentStaticTargetSearchEnv(gym.Env):
+class SingleAUVStaticEnv(gym.Env):
     def __init__(self, env_params, render_mode=None):
         """
         Initialize environment
@@ -39,9 +39,10 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         # agent's y coordinate at last measured distance
         # agent's x velocity
         # agent's y velocity
-        self.observation_space = spaces.Box(
-            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self.vel_mag, -self.vel_mag], dtype=np.float32),
-            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self.vel_mag, self.vel_mag], dtype=np.float32),
+        vel_bound = np.sqrt(2) * self.vel_mag * (1 + self.current_scale) 
+        self.observation_space = spaces.Box( 
+            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -vel_bound, -vel_bound], dtype=np.float32), 
+            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, vel_bound, vel_bound], dtype=np.float32),
             dtype = np.float32
         )
 
