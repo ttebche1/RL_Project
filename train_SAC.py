@@ -1,7 +1,6 @@
 # Train SAC DRL model on the static target search environment
 
-from class_single_asv_static_env import SingleASVStaticEnv as asv_env
-from class_single_auv_static_env import SingleAUVStaticEnv as auv_env
+from class_single_av_static_env import SingleAVStaticEnv as av_env
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -20,7 +19,7 @@ def create_vec_env(num_envs, env_params):
     """
     def make_env(i):
         def _init():
-            env = auv_env(env_params)
+            env = av_env(env_params)
             if i == 0:
                 # Only log first environment directly to a CSV in the current directory
                 return Monitor(env, filename=f"training")
@@ -56,7 +55,9 @@ if __name__ == "__main__":
         "max_current_fract": 0.5,       # Max current = this fraction of agent velocity 
         "dt": 30,                       # Time step in seconds
         "dist_noise_std": 1.0,          # Standard deviation of Gaussian noise added to distance measurements in meters
-        "action_noise_std": 0.1         # Action noise 
+        "action_noise_std": 0.1,        # Action noise
+        "is_auv": True,                 # Whether the agent is an AUV (True) or ASV (False)
+        "render_mode": None             # No rendering during training
     }
 
     # Create vectorized environments with training result logs

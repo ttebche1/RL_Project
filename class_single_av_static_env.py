@@ -5,29 +5,30 @@ import gymnasium as gym
 import numpy as np
 import pygame
 
-class SingleAUVStaticEnv(gym.Env):
-    def __init__(self, env_params, render_mode=None):
+class SingleAVStaticEnv(gym.Env):
+    def __init__(self, env_params):
         """
         Initialize environment
 
         Args:
             env_params (dict): Parameters for the static target search environment
-            render_mode: mode for rendering the environment; can be None or "human"
         """
         # Set random seed
         np.random.seed(None)
 
         # Initialize parameters
-        self.size = env_params["env_size"]                                          # Distance from origin in all four directions                             
-        self.target_radius = env_params["target_radius"] / self.size                # Radius for "found" condition, normalized
+        inv_size = 1 / env_params["env_size"]                                       # Inverse of distance from origin in all four directions                             
+        self.target_radius = env_params["target_radius"] * inv_size                 # Radius for "found" condition, normalized
         self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
-        self.vel_mag = env_params["velocity"] / self.size                           # Agent velocity magnitude, normalized
+        self.vel_mag = env_params["velocity"] * inv_size                            # Agent velocity magnitude, normalized
         self.angular_gain = (env_params["velocity"]) / env_params["turning_radius"] # Angular gain in rad/s, normalized 
         self.dt = env_params["dt"]                                                  # Timestep in seconds
         self.current_scale = env_params["max_current_fract"]                        # Max current = this fraction of agent velocity      
-        self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
+        self.dist_noise_std = env_params["dist_noise_std"] * inv_size               # Standard deviation of Gaussian noise added to distance measurements, normalized    
         self.action_noise_std = env_params["action_noise_std"]                      # Action noise
-        self.dvl_noise_std = 0.01 * self.vel_mag                                    # DVL noise standard deviation = 1% of velocity magnitude   
+        self.is_auv = env_params["is_auv"]                                          # Whether the agent is an AUV (True) or ASV (False)
+        if self.is_auv:
+            self.dvl_noise_std = 0.01 * self.vel_mag                                # DVL noise standard deviation = 1% of velocity magnitude   
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -37,20 +38,35 @@ class SingleAUVStaticEnv(gym.Env):
         # agent's distance to target in y direction
         # agent's x coordinate at least measured distance
         # agent's y coordinate at last measured distance
-        # agent's x velocity
-        # agent's y velocity
-        vel_bound = np.sqrt(2) * self.vel_mag * (1 + self.current_scale) 
+        # agent's x velocity (AUV) OR change in x distance to target (ASV)
+        # agent's y velocity (AUV) OR change in y distance to target (ASV)
+        if self.is_auv:
+            bound = np.sqrt(2) * self.vel_mag * (1 + self.current_scale) 
+        else:
+            bound = self.vel_mag
+
         self.observation_space = spaces.Box( 
-            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -vel_bound, -vel_bound], dtype=np.float32), 
-            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, vel_bound, vel_bound], dtype=np.float32),
+            low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -bound, -bound], dtype=np.float32), 
+            high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, bound, bound], dtype=np.float32),
             dtype = np.float32
         )
 
         # Initialize action space: yaw (heading angle) in [-1, 1], will be scaled by angular gain
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
 
+        # Pre-allocate arrays for speed
+        self.obs = np.zeros(self.observation_space.shape, dtype=np.float32) 
+        self.true_agent_loc_vec = np.zeros(2, dtype=np.float32)    
+        self.dr_agent_loc_vec = np.zeros(2, dtype=np.float32)        
+        self.meas_agent_loc_vec = np.zeros(2, dtype=np.float32) 
+        self.true_dist_to_target_vec = np.zeros(2, dtype=np.float32)
+        self.current_vec = np.zeros(2, dtype=np.float32) 
+        self.temp_vel_vec = np.zeros(2, dtype=np.float32)
+        self.dvl_vel_vec = np.zeros(2, dtype=np.float32)                # Used if AUV
+        self.d_true_dist_to_target_vec = np.zeros(2, dtype=np.float32)  # Used if ASV
+
         # Set render mode
-        self.render_mode = render_mode  
+        self.render_mode = env_params["render_mode"]  
         self.window_size = 512  
         self.window = None
         self.clock = None    
@@ -64,27 +80,28 @@ class SingleAUVStaticEnv(gym.Env):
         
         Return:
             observation (numpy array):
-                agent's x coordinate, assumed via dead-reckoning (not true position)
-                agent's y coordiante, assumed via dead-reckoning (not true position)
+                agent's x coordinate; assumed via dead-reckoning (AUV) OR true position (ASV)
+                agent's y coordiante; assumed via dead-reckoning (AUV) OR true position (ASV)
                 distance to target magnitude, measured
                 distance to target in x direction, true
                 distance to target in y direction, true
                 agent's x coordinate at last measured distance
                 agent's y at last measured distance
-                agent's x velocity, measured with dvl (true)
-                agent's y velocity, measured with dvl (true)
-        """
-        return np.array([
-            self.dr_agent_loc_vec[0],
-            self.dr_agent_loc_vec[1],
-            self.meas_dist_to_target_mag,
-            self.true_dist_to_target_vec[0],
-            self.true_dist_to_target_vec[1],
-            self.meas_agent_loc_vec[0],
-            self.meas_agent_loc_vec[1],
-            self.dvl_vel_vec[0],
-            self.dvl_vel_vec[1]],
-        dtype=np.float32)
+                agent's x velocity measured with dvl (AUV) OR change in x distance to target (ASV)
+                agent's y velocitymeasured with dvl (AUV) OR change in y distance to target (ASV)
+        """        
+        self.obs[2] = self.meas_dist_to_target_mag
+        self.obs[3:5] = self.true_dist_to_target_vec
+        self.obs[5:7] = self.meas_agent_loc_vec
+
+        if self.is_auv:
+            self.obs[0:2] = self.dr_agent_loc_vec
+            self.obs[7:9] = self.dvl_vel_vec
+        else:
+            self.obs[0:2] = self.true_agent_loc_vec
+            self.obs[7:9] = self.d_true_dist_to_target_vec
+    
+        return self.obs
     
     def get_info(self):
         return {}
@@ -105,30 +122,29 @@ class SingleAUVStaticEnv(gym.Env):
         super().reset(seed=seed)
 
         # Initialize agent
-        self.true_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)    # Center
-        self.dr_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)      
-        self.meas_agent_loc_vec = np.array([0.0, 0.0], dtype=np.float32)
-        self.dvl_vel_vec = np.array([0.0, 0.0], dtype=np.float32)
+        self.true_agent_loc_vec[:] = 0.0    # Center
+        self.dr_agent_loc_vec[:] = 0.0      
+        self.meas_agent_loc_vec[:] = 0.0
         self.yaw = 0 
+        self.dvl_vel_vec[:] = 0.0
 
         # Initialize target
         self.true_target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
 
         # Initialize distances
-        self.true_dist_to_target_vec = self.true_agent_loc_vec - self.true_target_loc_vec
+        np.subtract(self.true_agent_loc_vec, self.true_target_loc_vec, out=self.true_dist_to_target_vec)
         true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
-        if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
+        if true_dist_to_target_mag < 1.0 and np.random.rand() > 0.1:
             self.meas_dist_to_target_mag = self.compute_dist_to_target()
         else:  
             self.meas_dist_to_target_mag = 2.83
-
+        self.d_true_dist_to_target_vec[:] = 0.0
+        
         # Initialize current
         current_mag = np.random.uniform(0, self.vel_mag * self.current_scale)
-        current_angle = np.random.uniform(0, 2*np.pi)
-        self.current_vec = np.array([
-            current_mag * np.cos(current_angle),
-            current_mag * np.sin(current_angle)],
-        dtype=np.float32)
+        current_angle = np.random.uniform(0, 2 * np.pi)
+        self.current_vec[0] = current_mag * np.cos(current_angle)
+        self.current_vec[1] = current_mag * np.sin(current_angle)
 
         # Initialize step count
         self.step_count = 0
@@ -157,33 +173,38 @@ class SingleAUVStaticEnv(gym.Env):
         reward = 0.0
 
         # Ensure action is within action space
-        action  += np.random.normal(0, self.action_noise_std, action.shape)
+        action += np.random.normal(0, self.action_noise_std, action.shape)
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
         # Compute and take new location
         self.yaw += action[0] * self.angular_gain * self.dt # In radians
-        vel_vec = np.array([
-            self.vel_mag * np.cos(self.yaw),
-            self.vel_mag * np.sin(self.yaw)
-        ])
+        self.temp_vel_vec[0] = self.vel_mag * np.cos(self.yaw)
+        self.temp_vel_vec[1] = self.vel_mag * np.sin(self.yaw)
         prev_true_agent_loc_vec = self.true_agent_loc_vec.copy()
-        self.dr_agent_loc_vec += vel_vec * self.dt
-        self.true_agent_loc_vec = prev_true_agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
+        self.true_agent_loc_vec = prev_true_agent_loc_vec + self.temp_vel_vec * self.dt + self.current_vec * self.dt
 
         # Penalize agent if outside of bounds
         if np.any(self.true_agent_loc_vec < -1.0) or np.any(self.true_agent_loc_vec > 1.0):
             reward = -10.0
 
-        # Update velocity
-        self.dvl_vel_vec = (self.true_agent_loc_vec - prev_true_agent_loc_vec) / self.dt + \
-            np.random.normal(0, self.dvl_noise_std, size=2)
-
-        # Update distance to target 90% of the time (10% dropped distance measurements)
-        self.true_dist_to_target_vec = self.true_agent_loc_vec - self.true_target_loc_vec
+        if self.is_auv: # Update velocity
+            np.subtract(self.true_agent_loc_vec, prev_true_agent_loc_vec, out=self.dvl_vel_vec)
+            self.dvl_vel_vec /= self.dt
+            self.dvl_vel_vec += np.random.normal(0, self.dvl_noise_std, 2)
+        else:           # Update distance to target 90% of the time (10% dropped distance measurements)
+            prev_true_dist_to_target_vec = self.true_dist_to_target_vec.copy()
+        
+        np.subtract(self.true_agent_loc_vec, self.true_target_loc_vec, out=self.true_dist_to_target_vec)
         true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
-        if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
+        if true_dist_to_target_mag < 1.0 and np.random.rand() > 0.1:
             self.meas_dist_to_target_mag = self.compute_dist_to_target()
             self.meas_agent_loc_vec = self.dr_agent_loc_vec.copy() 
+        
+        # Update based on AUV or ASV
+        if self.is_auv:
+            self.dr_agent_loc_vec += self.temp_vel_vec * self.dt
+        else:
+            np.subtract(self.true_dist_to_target_vec, prev_true_dist_to_target_vec, out=self.d_true_dist_to_target_vec)
 
         # Terminal if within target radius
         terminated = bool(true_dist_to_target_mag <= self.target_radius)
@@ -192,7 +213,7 @@ class SingleAUVStaticEnv(gym.Env):
         if terminated:
             reward = 10.0
         else:
-            reward = float(-true_dist_to_target_mag)
+            reward = -true_dist_to_target_mag
         
         # Truncate if max steps reached
         self.step_count += 1
@@ -211,9 +232,9 @@ class SingleAUVStaticEnv(gym.Env):
         Return:
             dist_to_target (float): distance from agent to target, normalized
         """
-        dist_to_target = np.linalg.norm(self.true_agent_loc_vec - self.true_target_loc_vec) # Compute distance
-        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)      # Add noise
-        dist_to_target = max(0.0, dist_to_target)                                           # Remove negative distances
+        dist_to_target = np.linalg.norm(self.true_dist_to_target_vec)
+        dist_to_target += np.random.normal(0.01 * dist_to_target, self.dist_noise_std)  # Add noise
+        dist_to_target = max(0.0, dist_to_target)                                       # Remove negative distances
 
         return dist_to_target
     
