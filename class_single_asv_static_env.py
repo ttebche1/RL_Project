@@ -36,8 +36,8 @@ class SingleASVStaticEnv(gym.Env):
         # agent's distance to target in y direction
         # agent's x coordinate at least measured distance
         # agent's y coordinate at last measured distance
-        # change in agent's x location, true
-        # change in agent's y location, true
+        # change in distance to target in x direction
+        # change in distance to target in y direction
         self.observation_space = spaces.Box(
             low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -self.vel_mag, -self.vel_mag], dtype=np.float32),
             high = np.array([1.0, 1.0, 2.83, 2.0, 2.0, 1.0, 1.0, self.vel_mag, self.vel_mag], dtype=np.float32),
@@ -69,8 +69,8 @@ class SingleASVStaticEnv(gym.Env):
                 distance to target in y direction, true
                 agent's x coordinate at last measured distance
                 agent's y at last measured distance
-                change in agent's x direction, true
-                change in agent's y direction, true
+                change in distance to target in x direction
+                change in distance to target in y direction
         """
         return np.array([
             self.true_agent_loc_vec[0],
@@ -172,11 +172,13 @@ class SingleASVStaticEnv(gym.Env):
             reward = -10.0
 
         # Update distance to target 90% of the time (10% dropped distance measurements)
+        prev_true_dist_to_target_vec = self.true_dist_to_target_vec.copy()
         self.true_dist_to_target_vec = self.true_agent_loc_vec - self.true_target_loc_vec
         true_dist_to_target_mag = np.linalg.norm(self.true_dist_to_target_vec)
         if np.random.rand() > 0.1 and true_dist_to_target_mag < 1.0:
             self.meas_dist_to_target_mag = self.compute_dist_to_target()
-            self.meas_agent_loc_vec = self.dr_agent_loc_vec.copy() 
+            self.meas_agent_loc_vec = self.true_agent_loc_vec.copy() 
+        self.d_true_dist_to_target_vec = self.true_dist_to_target_vec - prev_true_dist_to_target_vec
 
         # Terminal if within target radius
         terminated = bool(true_dist_to_target_mag <= self.target_radius)

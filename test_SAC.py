@@ -1,5 +1,6 @@
 # Test trained SAC model on Static Target Search Environment
 
+from class_single_asv_static_env import SingleASVStaticEnv as asv_env
 from class_single_auv_static_env import SingleAUVStaticEnv as auv_env
 from stable_baselines3 import SAC
 import json
