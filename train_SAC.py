@@ -51,7 +51,7 @@ if __name__ == "__main__":
         "target_radius": 300.0,         # Radius for "found" condition in meters
         "max_steps_per_episode": 200,   # Max steps per episode
         "velocity": 1.0,                # Agent velocity in m/s
-        "turning_radius": 300,          # Agent turning radius in meters
+        "turning_radius": 30,           # Agent turning radius in meters
         "max_current_fract": 0.5,       # Max current = this fraction of agent velocity 
         "dt": 30,                       # Time step in seconds
         "dist_noise_std": 1.0,          # Standard deviation of Gaussian noise added to distance measurements in meters

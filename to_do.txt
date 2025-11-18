@@ -1,5 +1,4 @@
 # Class:
-# - Decrease turning radius
 # - Add particle filter for estimation / observations OR add noise to target stuff to simulate a filter
 # - Add estimator for agent position/correct observation space
 # - Minimize power consumption
@@ -8,6 +7,7 @@
 # - Different parameters and reward - theirs don't even train
 # - Added noise to action
 # - Increased max range between agent and target (and can communicate up to 1km instead of 0.9km)
+# - Decreased turn radius to 30m (much more realistic than 300m)
 #
 # Later:
 # - Add moving target w/ trailing
