@@ -20,15 +20,17 @@ class SingleAVStaticEnv(gym.Env):
         inv_size = 1 / env_params["env_size"]                                       # Inverse of distance from origin in all four directions                             
         self.target_radius = env_params["target_radius"] * inv_size                 # Radius for "found" condition, normalized
         self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
-        self.vel_mag = env_params["velocity"] * inv_size                            # Agent velocity magnitude, normalized
-        self.angular_gain = (env_params["velocity"]) / env_params["turning_radius"] # Angular gain in rad/s, normalized 
+        self.max_vel_mag = env_params["max_velocity"] * inv_size                    # Agent velocity magnitude, normalized
+        self.turn_rate = env_params["turn_rate"] * np.pi / 180                      # Agent turn rate in rad/s 
         self.dt = env_params["dt"]                                                  # Timestep in seconds
-        self.current_scale = env_params["max_current_fract"]                        # Max current = this fraction of agent velocity      
+        self.max_current_mag = env_params["max_current"] * inv_size                 # Max current magnitude, normalized      
         self.dist_noise_std = env_params["dist_noise_std"] * inv_size               # Standard deviation of Gaussian noise added to distance measurements, normalized    
-        self.action_noise_std = env_params["action_noise_std"]                      # Action noise
+        self.vel_noise_std = 0.02 * self.max_vel_mag                                # Velocity noise, normalized
+        self.yaw_noise_std = env_params["yaw_noise_std"]                      
         self.is_auv = env_params["is_auv"]                                          # Whether the agent is an AUV (True) or ASV (False)
-        if self.is_auv:
-            self.dvl_noise_std = 0.01 * self.vel_mag                                # DVL noise standard deviation = 1% of velocity magnitude   
+        self.power_coeff = env_params["rho"] * env_params["drag_coeff"] * \
+            env_params["area"] / (2 * env_params["eta"])                            # Power coefficient
+        self.hotel_power = env_params["hotel_power"]                                # Hotel load power in Watts
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -41,9 +43,9 @@ class SingleAVStaticEnv(gym.Env):
         # agent's x velocity (AUV) OR change in x distance to target (ASV)
         # agent's y velocity (AUV) OR change in y distance to target (ASV)
         if self.is_auv:
-            bound = np.sqrt(2) * self.vel_mag * (1 + self.current_scale) 
+            bound = self.max_vel_mag + self.max_current_mag 
         else:
-            bound = self.vel_mag
+            bound = self.max_vel_mag
 
         self.observation_space = spaces.Box( 
             low = np.array([-1.0, -1.0, 0.0, -2.0, -2.0, -1.0, -1.0, -bound, -bound], dtype=np.float32), 
@@ -51,8 +53,12 @@ class SingleAVStaticEnv(gym.Env):
             dtype = np.float32
         )
 
-        # Initialize action space: yaw (heading angle) in [-1, 1], will be scaled by angular gain
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
+        # Initialize action space: velocity and yaw (heading angle), will be scaled by max velocity and angular gain
+        self.action_space = spaces.Box(
+            low=np.array([0.0, -1.0]),
+            high=np.array([1.0, 1.0]),
+            dtype=np.float32
+        )
 
         # Pre-allocate arrays for speed
         self.obs = np.zeros(self.observation_space.shape, dtype=np.float32) 
@@ -61,7 +67,7 @@ class SingleAVStaticEnv(gym.Env):
         self.meas_agent_loc_vec = np.zeros(2, dtype=np.float32) 
         self.true_dist_to_target_vec = np.zeros(2, dtype=np.float32)
         self.current_vec = np.zeros(2, dtype=np.float32) 
-        self.temp_vel_vec = np.zeros(2, dtype=np.float32)
+        self.vel_command_vec = np.zeros(2, dtype=np.float32)
         self.dvl_vel_vec = np.zeros(2, dtype=np.float32)                # Used if AUV
         self.d_true_dist_to_target_vec = np.zeros(2, dtype=np.float32)  # Used if ASV
 
@@ -127,6 +133,7 @@ class SingleAVStaticEnv(gym.Env):
         self.meas_agent_loc_vec[:] = 0.0
         self.yaw = 0 
         self.dvl_vel_vec[:] = 0.0
+        self.cum_energy_used = 0.0
 
         # Initialize target
         self.true_target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
@@ -141,7 +148,7 @@ class SingleAVStaticEnv(gym.Env):
         self.d_true_dist_to_target_vec[:] = 0.0
         
         # Initialize current
-        current_mag = np.random.uniform(0, self.vel_mag * self.current_scale)
+        current_mag = np.random.uniform(0, self.max_current_mag)
         current_angle = np.random.uniform(0, 2 * np.pi)
         self.current_vec[0] = current_mag * np.cos(current_angle)
         self.current_vec[1] = current_mag * np.sin(current_angle)
@@ -173,15 +180,23 @@ class SingleAVStaticEnv(gym.Env):
         reward = 0.0
 
         # Ensure action is within action space
-        action += np.random.normal(0, self.action_noise_std, action.shape)
+        action[0] += np.random.normal(0, self.vel_noise_std)
+        action[1] += np.random.normal(0, self.yaw_noise_std)
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
-        # Compute and take new location
-        self.yaw += action[0] * self.angular_gain * self.dt # In radians
-        self.temp_vel_vec[0] = self.vel_mag * np.cos(self.yaw)
-        self.temp_vel_vec[1] = self.vel_mag * np.sin(self.yaw)
+        # Compute velocity
+        vel_command_mag = action[0] * self.max_vel_mag
+        self.yaw += action[1] * self.turn_rate * self.dt # In radians
+        self.vel_command_vec[0] = vel_command_mag * np.cos(self.yaw)
+        self.vel_command_vec[1] = vel_command_mag * np.sin(self.yaw)
+
+        # Update agent location
         prev_true_agent_loc_vec = self.true_agent_loc_vec.copy()
-        self.true_agent_loc_vec = prev_true_agent_loc_vec + self.temp_vel_vec * self.dt + self.current_vec * self.dt
+        self.true_agent_loc_vec = prev_true_agent_loc_vec + self.vel_command_vec * self.dt + self.current_vec * self.dt
+
+        # Compute energy used
+        power_used = self.power_coeff * vel_command_mag**3 + self.hotel_power
+        self.cum_energy_used += power_used * self.dt
 
         # Penalize agent if outside of bounds
         if np.any(self.true_agent_loc_vec < -1.0) or np.any(self.true_agent_loc_vec > 1.0):
@@ -190,7 +205,7 @@ class SingleAVStaticEnv(gym.Env):
         if self.is_auv: # Update velocity
             np.subtract(self.true_agent_loc_vec, prev_true_agent_loc_vec, out=self.dvl_vel_vec)
             self.dvl_vel_vec /= self.dt
-            self.dvl_vel_vec += np.random.normal(0, self.dvl_noise_std, 2)
+            self.dvl_vel_vec += np.random.normal(0, 0.01 * vel_command_mag, 2)
         else:           # Update distance to target 90% of the time (10% dropped distance measurements)
             prev_true_dist_to_target_vec = self.true_dist_to_target_vec.copy()
         
@@ -202,7 +217,7 @@ class SingleAVStaticEnv(gym.Env):
         
         # Update based on AUV or ASV
         if self.is_auv:
-            self.dr_agent_loc_vec += self.temp_vel_vec * self.dt
+            self.dr_agent_loc_vec += self.vel_command_vec * self.dt
         else:
             np.subtract(self.true_dist_to_target_vec, prev_true_dist_to_target_vec, out=self.d_true_dist_to_target_vec)
 
