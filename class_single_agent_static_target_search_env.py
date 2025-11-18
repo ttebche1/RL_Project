@@ -27,6 +27,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
         self.current_scale = env_params["max_current_fract"]                        # Max current = this fraction of agent velocity      
         self.dist_noise_std = env_params["dist_noise_std"] / self.size              # Standard deviation of Gaussian noise added to distance measurements, normalized    
         self.action_noise_std = env_params["action_noise_std"]                      # Action noise
+        self.dvl_noise_std = 0.01 * self.vel_mag                                    # DVL noise standard deviation = 1% of velocity magnitude   
 
         # Initialize observation space: 
         # agent's x coordinate
@@ -173,7 +174,8 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             reward = -10.0
 
         # Update velocity
-        self.dvl_vel_vec = self.true_agent_loc_vec - prev_true_agent_loc_vec
+        self.dvl_vel_vec = (self.true_agent_loc_vec - prev_true_agent_loc_vec) / self.dt + \
+            np.random.normal(0, self.dvl_noise_std, size=2)
 
         # Update distance to target 90% of the time (10% dropped distance measurements)
         self.true_dist_to_target_vec = self.true_agent_loc_vec - self.true_target_loc_vec

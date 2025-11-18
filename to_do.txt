@@ -1,6 +1,5 @@
 # Class:
 # - Add particle filter for estimation / observations OR add noise to target stuff to simulate a filter
-# - Add estimator for agent position/correct observation space
 # - Minimize power consumption
 #
 # Analyses:
