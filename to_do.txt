@@ -15,7 +15,6 @@
 # - Add complex comms things such as doppler
 # - Turn it into a whale problem!
 # - Add a more complex current model
-# - Add physics-based model; minimize power expended; remove constant velocity
 # - Add complex 3D bathymetry (obstacles)
 # - What if the target moves at varying speeds?
 #
