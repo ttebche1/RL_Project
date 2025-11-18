@@ -165,7 +165,7 @@ class SingleAgentStaticTargetSearchEnv(gym.Env):
             self.vel_mag * np.sin(self.yaw)
         ])
         prev_true_agent_loc_vec = self.true_agent_loc_vec.copy()
-        self.dr_agent_loc_vec = self.dr_agent_loc_vec + vel_vec * self.dt
+        self.dr_agent_loc_vec += vel_vec * self.dt
         self.true_agent_loc_vec = prev_true_agent_loc_vec + vel_vec * self.dt + self.current_vec * self.dt
 
         # Penalize agent if outside of bounds
