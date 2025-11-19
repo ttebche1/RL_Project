@@ -109,7 +109,14 @@ class SingleAVStaticEnv(gym.Env):
         return self.obs
     
     def get_info(self):
-        return {}
+        """
+        Return auxiliary information about the environment
+
+        Return:
+            info (dict): dictionary containing cumulative energy used
+        """
+        return {"e": self.cum_energy_used}
+
 
     def reset(self, *, seed=None, options=None):
         """
