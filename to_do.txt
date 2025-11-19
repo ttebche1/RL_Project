@@ -1,6 +1,6 @@
 # Class:
 # - Add particle filter for estimation / observations OR add noise to target stuff to simulate a filter
-# - Minimize power consumption: update error metric, record velocity in info, plot cumulative power, take videos
+# - Minimize power consumption: update error metric, take videos
 #
 # Analyses:
 # - Different parameters and reward - theirs don't even train

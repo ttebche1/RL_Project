@@ -15,13 +15,13 @@ def load_training_log(csv_file):
     df = pd.read_csv(csv_file, skiprows=1)
 
     # Check required columns
-    for col in ['r', 'l', 't']:
+    for col in ['r', 'l', 't', 'e']:
         if col not in df.columns:
             raise ValueError(f"CSV does not contain required column '{col}'.")
 
     return df
 
-def plot_training_results(df, reward_window, episode_window, success_window, max_steps):
+def plot_training_results(df, reward_window, episode_window, success_window, energy_window, max_steps):
     """
     Plot training results for a single environment
 
@@ -31,7 +31,7 @@ def plot_training_results(df, reward_window, episode_window, success_window, max
         episode_window (int): Window size for smoothing episode lengths
         success_window (int): Window size for smoothing success rates
     """
-    fig, axes = plt.subplots(3, 1, figsize=(12, 8))
+    fig, axes = plt.subplots(4, 1, figsize=(12, 8))
 
     # 1. Smoothed Reward per episode
     df['reward_smooth'] = df['r'].rolling(reward_window).mean()
@@ -59,6 +59,14 @@ def plot_training_results(df, reward_window, episode_window, success_window, max
     axes[2].set_ylim(0, 100)
     axes[2].grid(True)
 
+    # 4. Cumulative Energy Used per episode
+    df['energy_smooth'] = df['energy'].rolling(energy_window).mean()
+    axes[3].plot(df['energy_smooth'], color='red')
+    axes[3].set_xlabel("Episode")
+    axes[3].set_ylabel("Energy (J)")
+    axes[3].set_title("Smoothed Cumulative Energy per Episode")
+    axes[3].grid(True)
+
 
     plt.tight_layout()
     plt.show()
@@ -70,6 +78,7 @@ if __name__ == "__main__":
     reward_window = 75
     episode_window = 75
     success_window = 75
+    energy_window = 75
 
     # Load data
     df = load_training_log(csv_file)
@@ -77,4 +86,4 @@ if __name__ == "__main__":
         env_params = json.load(f)
 
     # Plot training results overlayed
-    plot_training_results(df, reward_window, episode_window, success_window, env_params["max_steps_per_episode"])
+    plot_training_results(df, reward_window, episode_window, success_window, energy_window, env_params["max_steps_per_episode"])
