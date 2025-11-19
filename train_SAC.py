@@ -43,9 +43,9 @@ if __name__ == "__main__":
     tau = 0.01                  # Target network update rate (slow updates)
     gamma = 0.99                # Discount factor for future rewards (heavily considers future rewards)
     train_freq = 4              # How often to update the NNs
-    gradient_steps = 4          # How many gradient steps to take during each update
+    gradient_steps = 1          # How many gradient steps to take during each update
     learning_rate = 3e-4        # How fast the NNs update
-    total_timesteps = int(1.5e6)  # Total timesteps to train the agent
+    total_timesteps = int(3e6)  # Total timesteps to train the agent
     env_params = {
         "env_size": 1000.0,             # Distance from the origin in all four directions in meters
         "target_radius": 300.0,         # Radius for "found" condition in meters
