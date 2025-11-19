@@ -27,8 +27,11 @@ class SingleAVStaticEnv(gym.Env):
         self.dist_noise_std = env_params["dist_noise_std"] * inv_size               # Standard deviation of Gaussian noise added to distance measurements, normalized    
         self.action_noise_std = env_params["action_noise_std"]                      # Action noise
         self.is_auv = env_params["is_auv"]                                          # Whether the agent is an AUV (True) or ASV (False)
-        self.power_coeff = env_params["rho"] * env_params["drag_coeff"] * \
+        power_coeff = env_params["rho"] * env_params["drag_coeff"] * \
             env_params["area"] / (2 * env_params["eta"])                            # Power coefficient
+        power_used = power_coeff * self.vel_mag**3 + self.hotel_power
+        self.energy_used = power_used * self.dt
+
         if self.is_auv:
             self.dvl_noise_std = 0.01 * self.vel_mag                                # DVL noise standard deviation = 1% of velocity magnitude   
 
@@ -184,6 +187,9 @@ class SingleAVStaticEnv(gym.Env):
         self.temp_vel_vec[1] = self.vel_mag * np.sin(self.yaw)
         prev_true_agent_loc_vec = self.true_agent_loc_vec.copy()
         self.true_agent_loc_vec = prev_true_agent_loc_vec + self.temp_vel_vec * self.dt + self.current_vec * self.dt
+
+        # Compute energy used
+        self.cum_energy_used += self.energy_used
 
         # Penalize agent if outside of bounds
         if np.any(self.true_agent_loc_vec < -1.0) or np.any(self.true_agent_loc_vec > 1.0):
