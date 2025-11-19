@@ -27,6 +27,8 @@ class SingleAVStaticEnv(gym.Env):
         self.dist_noise_std = env_params["dist_noise_std"] * inv_size               # Standard deviation of Gaussian noise added to distance measurements, normalized    
         self.action_noise_std = env_params["action_noise_std"]                      # Action noise
         self.is_auv = env_params["is_auv"]                                          # Whether the agent is an AUV (True) or ASV (False)
+        self.power_coeff = env_params["rho"] * env_params["drag_coeff"] * \
+            env_params["area"] / (2 * env_params["eta"])                            # Power coefficient
         if self.is_auv:
             self.dvl_noise_std = 0.01 * self.vel_mag                                # DVL noise standard deviation = 1% of velocity magnitude   
 
