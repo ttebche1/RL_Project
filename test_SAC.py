@@ -24,7 +24,7 @@ if __name__ == "__main__":
         obs, reward, done, truncated, info = env.step(action)
         total_reward += reward
 
-    print(f"Episode finished. Total reward: {total_reward}. Total energy: {info["e"]} J.")
+    print(f"Episode finished. Total reward: {total_reward}. Total energy: {info['e']/1000} kJ.")
 
     # Close environment
     env.close()

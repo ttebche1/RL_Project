@@ -60,10 +60,10 @@ def plot_training_results(df, reward_window, episode_window, success_window, ene
     axes[2].grid(True)
 
     # 4. Cumulative Energy Used per episode
-    df['energy_smooth'] = df['energy'].rolling(energy_window).mean()
+    df['energy_smooth'] = df['e'].rolling(energy_window).mean() / 1000.0  # Convert to kJ
     axes[3].plot(df['energy_smooth'], color='red')
     axes[3].set_xlabel("Episode")
-    axes[3].set_ylabel("Energy (J)")
+    axes[3].set_ylabel("Energy (kJ)")
     axes[3].set_title("Smoothed Cumulative Energy per Episode")
     axes[3].grid(True)
 
