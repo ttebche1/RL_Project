@@ -22,7 +22,7 @@ def create_vec_env(num_envs, env_params):
             env = av_env(env_params)
             if i == 0:
                 # Only log first environment directly to a CSV in the current directory
-                return Monitor(env, filename=f"training")
+                return Monitor(env, filename=f"training", info_keywords=("e",))
             else:
                 # Skip Monitor wrapper for other environments
                 return env
