@@ -29,8 +29,8 @@ class SingleAVStaticEnv(gym.Env):
         self.is_auv = env_params["is_auv"]                                          # Whether the agent is an AUV (True) or ASV (False)
         power_coeff = env_params["rho"] * env_params["drag_coeff"] * \
             env_params["area"] / (2 * env_params["eta"])                            # Power coefficient
-        power_used = power_coeff * self.vel_mag**3 + self.hotel_power
-        self.energy_used = power_used * self.dt
+        power_used = power_coeff * self.vel_mag**3 + env_params["hotel_power"]      # Power used per step (at constant velocity)
+        self.energy_used = power_used * self.dt                                     # Energy used per step (at constant velocity)
 
         if self.is_auv:
             self.dvl_noise_std = 0.01 * self.vel_mag                                # DVL noise standard deviation = 1% of velocity magnitude   
@@ -139,6 +139,7 @@ class SingleAVStaticEnv(gym.Env):
         self.meas_agent_loc_vec[:] = 0.0
         self.yaw = 0 
         self.dvl_vel_vec[:] = 0.0
+        self.cum_energy_used = 0.0
 
         # Initialize target
         self.true_target_loc_vec = np.random.uniform(low=-1.0, high=1.0, size=(2,)).astype(np.float32)   # Random location
