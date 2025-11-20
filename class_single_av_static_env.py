@@ -39,7 +39,7 @@ class SingleAVStaticEnv(gym.Env):
         # distance to target
         # agent's distance to target in x direction
         # agent's distance to target in y direction
-        # agent's x coordinate at least measured distance
+        # agent's x coordinate at last measured distance
         # agent's y coordinate at last measured distance
         # agent's x velocity (AUV) OR change in x distance to target (ASV)
         # agent's y velocity (AUV) OR change in y distance to target (ASV)

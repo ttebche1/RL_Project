@@ -49,7 +49,7 @@ if __name__ == "__main__":
     gradient_steps = 4          # How many gradient steps to take during each update
     learning_rate = 3e-4        # How fast the NNs update
     if is_auv:
-        total_timesteps = int(3e6)  # Total timesteps to train the agent
+        total_timesteps = int(2e6)  # Total timesteps to train the agent
     else:
         total_timesteps = int(1e6)
     env_params = {

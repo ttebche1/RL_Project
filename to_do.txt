@@ -5,6 +5,7 @@
 # Do we need to add acceleration? Is it jumping around different velocities?
 #
 # Later:
+# - Make more realistic current (mine might be too high)
 # - Add particle filter for estimation / observations OR add noise to target stuff to simulate a filter
 # - Add moving target w/ trailing
 # - Add baseline comparison
