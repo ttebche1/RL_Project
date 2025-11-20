@@ -56,13 +56,13 @@ if __name__ == "__main__":
         "dt": 30,                       # Time step in seconds
         "dist_noise_std": 1.0,          # Standard deviation of Gaussian noise added to distance measurements in meters
         "yaw_noise_std": 0.1,           # Standard deviation of Gaussian noise added to yaw actions in radians
+        "render_mode": None,             # No rendering during training
         "is_auv": True,                 # Whether the agent is an AUV (True) or ASV (False)
         "rho": 1025,                    # Seawater density in kg/m^3          
         "hotel_power": 30,              # Hotel load power in Watts
         "drag_coeff": 0.0079,           # Drag coefficient
         "area": 12.507,                 # Area in m^2
-        "eta": 0.5,                     # Propulsion efficiency
-        "render_mode": None             # No rendering during training
+        "eta": 0.5                      # Propulsion efficiency
     }
 
     # Create vectorized environments with training result logs
