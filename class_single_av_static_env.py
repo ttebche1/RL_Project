@@ -17,7 +17,8 @@ class SingleAVStaticEnv(gym.Env):
         np.random.seed(None)
 
         # Initialize parameters
-        inv_size = 1 / env_params["env_size"]                                       # Inverse of distance from origin in all four directions                             
+        self.size = env_params["env_size"]
+        inv_size = 1 / self.size                                                    # Inverse of distance from origin in all four directions                             
         self.target_radius = env_params["target_radius"] * inv_size                 # Radius for "found" condition, normalized
         self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
         self.max_vel_mag = env_params["max_velocity"] * inv_size                    # Agent velocity magnitude, normalized
@@ -114,9 +115,9 @@ class SingleAVStaticEnv(gym.Env):
         Return auxiliary information about the environment
 
         Return:
-            info (dict): dictionary containing cumulative energy used
+            info (dict): dictionary containing cumulative energy used in J
         """
-        return {"e": self.cum_energy_used}
+        return {"e": self.cum_energy_used * self.size}
 
     def reset(self, *, seed=None, options=None):
         """
@@ -206,7 +207,7 @@ class SingleAVStaticEnv(gym.Env):
 
         # Penalize agent if outside of bounds
         if np.any(self.true_agent_loc_vec < -1.0) or np.any(self.true_agent_loc_vec > 1.0):
-            reward = -10.0
+            reward = -100.0
 
         if self.is_auv: # Update velocity
             np.subtract(self.true_agent_loc_vec, prev_true_agent_loc_vec, out=self.dvl_vel_vec)
@@ -232,9 +233,9 @@ class SingleAVStaticEnv(gym.Env):
 
         # Update reward
         if terminated:
-            reward = 10.0
+            reward = 100.0
         else:
-            reward = -true_dist_to_target_mag
+            reward = -self.cum_energy_used / 100000.0
         
         # Truncate if max steps reached
         self.step_count += 1

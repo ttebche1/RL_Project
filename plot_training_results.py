@@ -21,7 +21,7 @@ def load_training_log(csv_file):
 
     return df
 
-def plot_training_results(df, reward_window, episode_window, success_window, energy_window, max_steps):
+def plot_training_results(df, reward_window, episode_window, success_window, energy_window, max_steps, vel_scale):
     """
     Plot training results for a single environment
 
@@ -60,10 +60,10 @@ def plot_training_results(df, reward_window, episode_window, success_window, ene
     axes[2].grid(True)
 
     # 4. Cumulative Energy Used per episode
-    df['energy_smooth'] = df['e'].rolling(energy_window).mean() / 1000  # Convert to kJ
+    df['energy_smooth'] = df['e'].rolling(energy_window).mean() * vel_scale / int(1e6)  # Convert to MJ
     axes[3].plot(df['energy_smooth'], color='red')
     axes[3].set_xlabel("Episode")
-    axes[3].set_ylabel("Energy (kJ)")
+    axes[3].set_ylabel("Energy (MJ)")
     axes[3].set_title("Smoothed Cumulative Energy per Episode")
     axes[3].grid(True)
 
@@ -86,4 +86,5 @@ if __name__ == "__main__":
         env_params = json.load(f)
 
     # Plot training results overlayed
-    plot_training_results(df, reward_window, episode_window, success_window, energy_window, env_params["max_steps_per_episode"])
+    plot_training_results(df, reward_window, episode_window, success_window, energy_window, \
+                          env_params["max_steps_per_episode"], env_params["env_size"])
