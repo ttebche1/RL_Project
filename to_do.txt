@@ -4,13 +4,6 @@
 # Merge constant velocity into this file and remove ASV
 # Do we need to add acceleration? Is it jumping around different velocities?
 #
-# Analyses:
-# - Different parameters and reward - theirs don't even train
-# - Added noise to action
-# - Increased max range between agent and target (and can communicate up to 1km instead of 0.9km)
-# - Decreased turn radius to 30m (much more realistic than 300m)
-# - Added estimation of AUV position (basically converting from ASV to AUV)
-#
 # Later:
 # - Add particle filter for estimation / observations OR add noise to target stuff to simulate a filter
 # - Add moving target w/ trailing
