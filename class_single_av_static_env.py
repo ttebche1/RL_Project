@@ -17,21 +17,21 @@ class SingleAVStaticEnv(gym.Env):
         np.random.seed(None)
 
         # Initialize parameters
-        self.size = env_params["env_size"]                                          # Distance from origin in all four directions
+        self.size = env_params["env_size"]                                  # Distance from origin in all four directions
         inv_size = 1 / self.size                                                                               
-        self.target_radius = env_params["target_radius"] * inv_size                 # Radius for "found" condition, normalized
-        self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
-        self.max_vel_mag = env_params["max_velocity"] * inv_size                    # Agent velocity magnitude, normalized
-        self.turn_rate = env_params["turn_rate"] * np.pi / 180                      # Agent turn rate in rad/s 
-        self.dt = env_params["dt"]                                                  # Timestep in seconds
-        self.max_current_mag = env_params["max_current"] * inv_size                 # Max current magnitude, normalized      
-        self.dist_noise_std = env_params["dist_noise_std"] * inv_size               # Standard deviation of Gaussian noise added to distance measurements, normalized    
-        self.vel_noise_std = 0.02 * self.max_vel_mag                                # Velocity noise, normalized
+        self.target_radius = env_params["target_radius"] * inv_size         # Radius for "found" condition, normalized
+        self.max_steps_per_episode = env_params["max_steps_per_episode"]    # Maximum steps per episode
+        self.max_vel_mag = env_params["max_velocity"] * inv_size            # Agent velocity magnitude, normalized
+        self.turn_rate = env_params["turn_rate"] * np.pi / 180              # Agent turn rate in rad/s 
+        self.dt = env_params["dt"]                                          # Timestep in seconds
+        self.max_current_mag = env_params["max_current"] * inv_size         # Max current magnitude, normalized      
+        self.dist_noise_std = env_params["dist_noise_std"] * inv_size       # Standard deviation of Gaussian noise added to distance measurements, normalized    
+        self.vel_noise_std = 0.02 * self.max_vel_mag                        # Velocity noise, normalized
         self.yaw_noise_std = env_params["yaw_noise_std"]                      
-        self.is_auv = env_params["is_auv"]                                          # Whether the agent is an AUV (True) or ASV (False)
+        self.is_auv = env_params["is_auv"]                                  # Whether the agent is an AUV (True) or ASV (False)
         self.power_coeff = env_params["rho"] * env_params["drag_coeff"] * \
-            env_params["area"] / (2 * env_params["eta"])                            # Power coefficient
-        self.hotel_power = env_params["hotel_power"]                                # Hotel load power in Watts
+            env_params["area"] / (2 * env_params["eta"])                    # Power coefficient
+        self.hotel_power = env_params["hotel_power"]                        # Hotel load power in Watts
 
         # Initialize observation space: 
         # agent's x coordinate
