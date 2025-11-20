@@ -1,3 +1,9 @@
+# Analyze velocity during tests - see why the total power used seems smaller
+# Compare to magnitude of currents - do we need a 5m/s option for velocity? Will it ever be used?
+# Be able to set current and target location for testing
+# Merge constant velocity into this file 
+# Do we need to add acceleration? Is it jumping around different velocities?
+#
 # Analyses:
 # - Different parameters and reward - theirs don't even train
 # - Added noise to action
