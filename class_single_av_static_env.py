@@ -17,8 +17,8 @@ class SingleAVStaticEnv(gym.Env):
         np.random.seed(None)
 
         # Initialize parameters
-        self.size = env_params["env_size"]
-        inv_size = 1 / self.size                                                    # Inverse of distance from origin in all four directions                             
+        self.size = env_params["env_size"]                                          # Distance from origin in all four directions
+        inv_size = 1 / self.size                                                                               
         self.target_radius = env_params["target_radius"] * inv_size                 # Radius for "found" condition, normalized
         self.max_steps_per_episode = env_params["max_steps_per_episode"]            # Maximum steps per episode
         self.max_vel_mag = env_params["max_velocity"] * inv_size                    # Agent velocity magnitude, normalized
