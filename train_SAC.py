@@ -68,9 +68,7 @@ if __name__ == "__main__":
         "drag_coeff": 0.0079,           # Drag coefficient
         "area": 12.507,                 # Area in m^2
         "eta": 0.5,                     # Propulsion efficiency
-        "const_vel": False,             # Whether to use constant (True) or variable (False) velocity
         "max_velocity": 1.0,            # Agent max velocity in m/s if const_vel is False
-        "velocity": 1.0                 # Agent constant velocity in m/s if const_vel is True
     }
 
     # Create vectorized environments with training result logs
