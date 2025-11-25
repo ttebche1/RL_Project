@@ -31,7 +31,7 @@ def plot_training_results(df, reward_window, episode_window, success_window, ene
         episode_window (int): Window size for smoothing episode lengths
         success_window (int): Window size for smoothing success rates
     """
-    fig, axes = plt.subplots(4, 1, figsize=(12, 8))
+    fig, axes = plt.subplots(3, 1, figsize=(12, 8))
 
     # 1. Smoothed Reward per episode
     df['reward_smooth'] = df['r'].rolling(reward_window).mean()
@@ -60,12 +60,12 @@ def plot_training_results(df, reward_window, episode_window, success_window, ene
     axes[2].grid(True)
 
     # 4. Cumulative Energy Used per episode
-    df['energy_smooth'] = df['e'].rolling(energy_window).mean() / 1000.0  # Convert to kJ
-    axes[3].plot(df['energy_smooth'], color='red')
-    axes[3].set_xlabel("Episode")
-    axes[3].set_ylabel("Energy (kJ)")
-    axes[3].set_title("Smoothed Cumulative Energy per Episode")
-    axes[3].grid(True)
+    #df['energy_smooth'] = df['e'].rolling(energy_window).mean() / 1000.0  # Convert to kJ
+    #axes[3].plot(df['energy_smooth'], color='red')
+    #axes[3].set_xlabel("Episode")
+    #axes[3].set_ylabel("Energy (kJ)")
+    #axes[3].set_title("Smoothed Cumulative Energy per Episode")
+    #axes[3].grid(True)
 
 
     plt.tight_layout()
