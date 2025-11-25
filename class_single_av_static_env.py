@@ -376,6 +376,14 @@ class SingleAVStaticEnv(gym.Env):
 
         # Update at a set frames per second
         self.clock.tick(5)
+
+        rgb_array = pygame.surfarray.array3d(canvas)
+        rgb_array = rgb_array.transpose((1, 0, 2))  # Pygame uses (width, height), imageio expects (height, width)
+
+        return rgb_array
+    
+    def render(self):
+        return self.render_frame()
         
     def close(self):
         """Close pygame resources if the window has been initialized and is active"""

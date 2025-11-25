@@ -45,7 +45,7 @@ if __name__ == "__main__":
     train_freq = 4              # How often to update the NNs
     gradient_steps = 4          # How many gradient steps to take during each update
     learning_rate = 3e-4        # How fast the NNs update
-    total_timesteps = int(0.6e6)  # Total timesteps to train the agent
+    total_timesteps = int(0.2e6)  # Total timesteps to train the agent
     env_params = {
         "env_size": 1000.0,             # Distance from the origin in all four directions in meters
         "target_radius": 300.0,         # Radius for "found" condition in meters
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         "dt": 30,                       # Time step in seconds
         "dist_noise_std": 1.0,          # Standard deviation of Gaussian noise added to distance measurements in meters
         "action_noise_std": 0.1,        # Action noise
-        "is_auv": True,                 # Whether the agent is an AUV (True) or ASV (False)
+        "is_auv": False,                 # Whether the agent is an AUV (True) or ASV (False)
         "rho": 1025,                    # Seawater density in kg/m^3          
         "hotel_power": 30,              # Hotel load power in Watts
         "drag_coeff": 0.0079,           # Drag coefficient

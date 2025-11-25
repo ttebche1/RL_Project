@@ -2,6 +2,7 @@
 
 from class_single_av_static_env import SingleAVStaticEnv as av_env
 from stable_baselines3 import SAC
+import imageio
 import json
 
 if __name__ == "__main__":
@@ -15,6 +16,8 @@ if __name__ == "__main__":
     env = av_env(env_params)
     obs, info = env.reset()
 
+    frames = []
+
     # Run one episode
     done = False
     truncated = False
@@ -24,7 +27,12 @@ if __name__ == "__main__":
         obs, reward, done, truncated, info = env.step(action)
         total_reward += reward
 
+        frame = env.render()  # should return RGB array
+        frames.append(frame)
+
     print(f"Episode finished. Total reward: {total_reward}. Total energy: {info['e']/1000} kJ.")
+
+    imageio.mimsave("sac_test_episode.gif", frames, fps=15)
 
     # Close environment
     env.close()
