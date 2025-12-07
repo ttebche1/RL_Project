@@ -11,6 +11,7 @@ if __name__ == "__main__":
     with open("sac_env_params.json", "r") as f:
         env_params = json.load(f)
     env_params["render_mode"] = "human"  # Enable visual rendering for testing
+    print(env_params["is_auv"])
 
     # Create environment with visual rendering
     env = av_env(env_params)
@@ -32,7 +33,8 @@ if __name__ == "__main__":
 
     print(f"Episode finished. Total reward: {total_reward}. Total energy: {info['e']/1000} kJ.")
 
-    imageio.mimsave("sac_test_episode.gif", frames, fps=15)
+    env.render_trajectory(save_path="auv_trajectory.png")
+    #imageio.mimsave("sac_test_episode.gif", frames, fps=15)
 
     # Close environment
     env.close()
