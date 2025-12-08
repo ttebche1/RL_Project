@@ -136,6 +136,7 @@ class SingleAVStaticEnv(gym.Env):
 
         # Initialize agent
         self.true_agent_loc_vec[:] = 0.0    # Center
+        self.agent_trajectory = [self.true_agent_loc_vec.copy()]
         self.dr_agent_loc_vec[:] = 0.0      
         self.meas_agent_loc_vec[:] = 0.0
         self.yaw = 0 
@@ -200,6 +201,7 @@ class SingleAVStaticEnv(gym.Env):
         # Update agent location
         prev_true_agent_loc_vec = self.true_agent_loc_vec.copy()
         self.true_agent_loc_vec = prev_true_agent_loc_vec + self.vel_command_vec * self.dt + self.current_vec * self.dt
+        self.agent_trajectory.append(self.true_agent_loc_vec.copy())
 
         # Compute energy used
         power_used = self.power_coeff * vel_command_mag**3 + self.hotel_power
@@ -382,6 +384,49 @@ class SingleAVStaticEnv(gym.Env):
 
         # Update at a set frames per second
         self.clock.tick(5)
+    
+    def render_trajectory(self, save_path=None):
+        """Render the full trajectory of the ASV in one image"""
+        pygame.init()
+        canvas = pygame.Surface((self.window_size, self.window_size))
+        canvas.fill((255, 255, 255))  # White background
+
+        # Draw current arrows (optional)
+        self.draw_current_arrows(canvas)
+
+        # Convert target location to screen coordinates
+        target_center = tuple(self.env_to_screen(self.true_target_loc_vec))
+        pygame.draw.circle(canvas, (255, 0, 0), target_center, max(8, int(self.window_size * 0.015)))
+
+        # Draw target radius scaled to window size
+        pixels_per_unit = self.window_size / 2  
+        radius_pix = int(self.target_radius * pixels_per_unit)  
+        if radius_pix > 0:
+            pygame.draw.circle(canvas, (255, 0, 0), target_center, radius_pix, width=1)
+
+        # Draw trajectory
+        if len(self.agent_trajectory) > 1:
+            points = [self.env_to_screen(pos) for pos in self.agent_trajectory]
+            pygame.draw.lines(canvas, (0, 0, 255), False, points, width=2)  # Blue line
+            for p in points:
+                pygame.draw.circle(canvas, (0, 0, 255), tuple(p), 3)  # Optional: small dot at each step
+
+        # Convert canvas to RGB array
+        rgb_array = pygame.surfarray.array3d(canvas).transpose((1, 0, 2))
+
+        # Optionally save image
+        if save_path:
+            import imageio
+            imageio.imwrite(save_path, rgb_array)
+
+        # Display in a pygame window
+        if self.render_mode == "human":
+            if self.window is None:
+                self.window = pygame.display.set_mode((self.window_size, self.window_size))
+            self.window.blit(canvas, canvas.get_rect())
+            pygame.display.update()
+
+        return rgb_array
         
     def close(self):
         """Close pygame resources if the window has been initialized and is active"""

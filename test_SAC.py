@@ -26,5 +26,7 @@ if __name__ == "__main__":
 
     print(f"Episode finished. Total reward: {total_reward}. Total energy: {info['e']/int(1e6)} MJ")
 
+    env.render_trajectory(save_path="PowerSimulation.png")
+
     # Close environment
     env.close()
